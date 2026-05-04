@@ -4,7 +4,10 @@ interface EmptyStateProps {
 
 export function EmptyState({ message = 'Brak danych.' }: EmptyStateProps) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400">
+    <div
+      className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400"
+      data-testid="empty-state"
+    >
       <svg
         className="h-10 w-10"
         fill="none"
