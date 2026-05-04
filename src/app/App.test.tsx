@@ -9,11 +9,16 @@ vi.mock('react-leaflet', () => ({
   TileLayer: () => null,
   CircleMarker: () => null,
   Tooltip: () => null,
-  useMap: () => ({ flyTo: vi.fn() }),
+  useMap: () => ({ flyTo: vi.fn(), getBounds: () => ({ getWest: () => 0, getSouth: () => 0, getEast: () => 10, getNorth: () => 10 }) }),
+  useMapEvents: () => null,
 }));
 
 vi.mock('@/features/air-quality/hooks/useStations', () => ({
   useStations: () => ({ data: [], isLoading: false, error: null }),
+}));
+
+vi.mock('@/features/air-quality/hooks/useGlobalStations', () => ({
+  useGlobalStations: () => ({ data: [], isLoading: false, error: null }),
 }));
 
 vi.mock('@/features/air-quality/hooks/useAirQualityIndex', () => ({

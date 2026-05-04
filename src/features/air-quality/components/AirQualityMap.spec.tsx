@@ -25,7 +25,8 @@ vi.mock('react-leaflet', () => ({
     </div>
   ),
   Tooltip: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  useMap: () => ({ setView: vi.fn(), flyTo: vi.fn() }),
+  useMap: () => ({ setView: vi.fn(), flyTo: vi.fn(), getBounds: () => ({ getWest: () => 0, getSouth: () => 0, getEast: () => 10, getNorth: () => 10 }) }),
+  useMapEvents: () => null,
 }));
 
 const mockStations: Station[] = [
