@@ -1,19 +1,39 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AirQualityMap } from '@/features/air-quality/components/AirQualityMap';
 import { StationDetailsPanel } from '@/features/air-quality/components/StationDetailsPanel';
 import { StationSearch } from '@/features/air-quality/components/StationSearch';
 import { useStations } from '@/features/air-quality/hooks/useStations';
+import { useGlobalStations } from '@/features/air-quality/hooks/useGlobalStations';
+import type { MapBounds } from '@/features/air-quality/hooks/useGlobalStations';
 import type { Station } from '@/features/air-quality/model/station.types';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { ErrorState } from '@/shared/components/ErrorState';
 import { Layout } from '@/shared/components/Layout';
 
+const POLAND_BBOX = { minLon: 14.1, minLat: 49.0, maxLon: 24.2, maxLat: 54.9 };
+
+function isInPoland(station: Station): boolean {
+  return (
+    station.latitude >= POLAND_BBOX.minLat &&
+    station.latitude <= POLAND_BBOX.maxLat &&
+    station.longitude >= POLAND_BBOX.minLon &&
+    station.longitude <= POLAND_BBOX.maxLon
+  );
+}
+
 function App() {
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [selectedSensorId, setSelectedSensorId] = useState<number | null>(null);
-  const { data: stations = [], isLoading, error } = useStations();
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  const boundsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const selectedStation = stations.find((station) => station.id === selectedStationId) ?? null;
+  const { data: giosStations = [], isLoading, error } = useStations();
+  const { data: globalStations = [] } = useGlobalStations(mapBounds);
+
+  const filteredGlobalStations = globalStations.filter((s) => !isInPoland(s));
+  const allStations = [...giosStations, ...filteredGlobalStations];
+
+  const selectedStation = allStations.find((station) => station.id === selectedStationId) ?? null;
 
   function handleStationSelect(station: Station) {
     setSelectedStationId(station.id);
@@ -25,20 +45,30 @@ function App() {
     setSelectedSensorId(null);
   }
 
+  function handleBoundsChange(bounds: MapBounds) {
+    if (boundsDebounceRef.current) {
+      clearTimeout(boundsDebounceRef.current);
+    }
+    boundsDebounceRef.current = setTimeout(() => {
+      setMapBounds(bounds);
+    }, 500);
+  }
+
   function handleClose() {
     setSelectedStationId(null);
     setSelectedSensorId(null);
   }
 
   return (
-    <Layout header={<StationSearch stations={stations} onStationSelect={handleStationSelect} />}>
+    <Layout header={<StationSearch stations={allStations} onStationSelect={handleStationSelect} />}>
       <div className="relative flex-1">
         <ErrorBoundary fallback={<ErrorState message="Wystąpił błąd mapy. Odśwież stronę." />}>
           <AirQualityMap
-            stations={stations}
+            stations={allStations}
             selectedStation={selectedStation}
             selectedStationId={selectedStationId}
             onStationSelect={handleMapStationSelect}
+            onBoundsChange={handleBoundsChange}
             isLoading={isLoading}
             error={error instanceof Error ? error : null}
           />
