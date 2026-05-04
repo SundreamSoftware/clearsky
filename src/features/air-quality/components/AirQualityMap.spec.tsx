@@ -4,6 +4,14 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Station } from '@/features/air-quality/model/station.types';
 import { AirQualityMap } from './AirQualityMap';
 
+vi.mock('@/features/air-quality/hooks/useAirQualityIndex', () => ({
+  useAirQualityIndex: () => ({ data: null, isLoading: false, error: null }),
+}));
+
+vi.mock('@/features/air-quality/hooks/useOpenAqAqi', () => ({
+  useOpenAqAqi: () => ({ data: null, isLoading: false, error: null }),
+}));
+
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children: ReactNode }) => <div data-testid="map">{children}</div>,
   TileLayer: () => null,
@@ -61,7 +69,6 @@ describe('AirQualityMap', () => {
         stations={[]}
         selectedStation={null}
         selectedStationId={null}
-        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={false}
         error={null}
@@ -77,7 +84,6 @@ describe('AirQualityMap', () => {
         stations={[]}
         selectedStation={null}
         selectedStationId={null}
-        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={true}
         error={null}
@@ -93,7 +99,6 @@ describe('AirQualityMap', () => {
         stations={[]}
         selectedStation={null}
         selectedStationId={null}
-        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={false}
         error={new Error('Network error')}
@@ -109,7 +114,6 @@ describe('AirQualityMap', () => {
         stations={mockStations}
         selectedStation={null}
         selectedStationId={null}
-        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={false}
         error={null}
