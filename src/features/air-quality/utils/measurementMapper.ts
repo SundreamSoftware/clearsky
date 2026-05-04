@@ -1,17 +1,17 @@
 import type { MeasurementsDto } from '../api/gios.dto';
 import type { Measurement } from '../model/measurement.types';
-import { resolveUnit } from './sensorMapper';
 
 export function mapMeasurementsDto(
   dto: MeasurementsDto,
   sensorId: number,
+  paramCode: string,
 ): Measurement[] {
-  return dto.values
-    .filter((v): v is { date: string; value: number } => v.value !== null)
+  return dto['Lista danych pomiarowych']
+    .filter((v): v is { Data: string; Wartość: number } => v['Wartość'] !== null)
     .map((v) => ({
       sensorId,
-      date: v.date,
-      value: v.value,
-      unit: resolveUnit(dto.key),
+      date: v['Data'],
+      value: v['Wartość'],
+      unit: paramCode,
     }));
 }
