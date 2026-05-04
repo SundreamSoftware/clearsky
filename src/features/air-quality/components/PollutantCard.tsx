@@ -36,7 +36,10 @@ export function PollutantCard({
           </div>
           <div className="text-right">
             {isLoading ? (
-              <div className="animate-pulse rounded bg-gray-200 h-4 w-16" />
+              <div className="animate-pulse">
+                <div className="mb-2 h-4 w-16 rounded bg-gray-200" />
+                <div className="h-6 w-24 rounded bg-gray-200" />
+              </div>
             ) : (
               <p className="text-lg font-semibold text-gray-900">
                 {latestMeasurement
