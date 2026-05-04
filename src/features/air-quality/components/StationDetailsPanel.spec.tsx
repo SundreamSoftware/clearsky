@@ -16,6 +16,9 @@ vi.mock('@/features/air-quality/hooks/useSensorMeasurements', () => ({
 vi.mock('@/features/weather/hooks/useWeather', () => ({
   useWeather: vi.fn(() => ({ data: undefined, isLoading: false, error: null })),
 }));
+vi.mock('@/features/weather/components/WeatherHistoryChart', () => ({
+  WeatherHistoryChart: () => null,
+}));
 
 import { useAirQualityIndex } from '@/features/air-quality/hooks/useAirQualityIndex';
 import { useSensorMeasurements } from '@/features/air-quality/hooks/useSensorMeasurements';
