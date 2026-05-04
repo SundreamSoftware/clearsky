@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import type { Station } from '@/features/air-quality/model/station.types';
 import { ErrorState } from '@/shared/components/ErrorState';
 import { LoadingState } from '@/shared/components/LoadingState';
@@ -6,10 +7,29 @@ import { StationMarker } from './StationMarker';
 
 interface AirQualityMapProps {
   stations: Station[];
+  selectedStation: Station | null;
   selectedStationId: number | null;
   onStationSelect: (stationId: number) => void;
   isLoading: boolean;
   error: Error | null;
+}
+
+interface MapControllerProps {
+  selectedStation: Station | null;
+}
+
+function MapController({ selectedStation }: MapControllerProps) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedStation) {
+      map.flyTo([selectedStation.latitude, selectedStation.longitude], 12, {
+        duration: 0.8,
+      });
+    }
+  }, [map, selectedStation]);
+
+  return null;
 }
 
 const POLAND_CENTER: [number, number] = [52.0, 19.5];
@@ -17,6 +37,7 @@ const DEFAULT_ZOOM = 6;
 
 export function AirQualityMap({
   stations,
+  selectedStation,
   selectedStationId,
   onStationSelect,
   isLoading,
@@ -46,6 +67,7 @@ export function AirQualityMap({
         className="h-full w-full"
         data-testid="map"
       >
+        <MapController selectedStation={selectedStation} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
