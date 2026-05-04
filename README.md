@@ -1,6 +1,6 @@
 # 🌤 ClearSky
 
-> Real-time air quality dashboard for Poland
+> Real-time air quality and weather dashboard — Poland + Global
 
 [![Deploy](https://github.com/SundreamSoftware/clearsky/actions/workflows/deploy.yml/badge.svg)](https://github.com/SundreamSoftware/clearsky/actions/workflows/deploy.yml)
 
@@ -8,15 +8,17 @@ Live: [clearsky.sundreamsoftware.pl](https://clearsky.sundreamsoftware.pl)
 
 ## Overview
 
-ClearSky is a production-ready air quality monitoring dashboard built with React and TypeScript. It integrates with the GIOŚ (Chief Inspectorate for Environmental Protection) public API to display real-time air quality data from monitoring stations across Poland.
+ClearSky is a production-ready air quality and weather monitoring dashboard built with React and TypeScript. It integrates with multiple public APIs to display real-time air quality data from monitoring stations across Poland and globally, along with current and historical weather conditions.
 
 ## Features
 
-- 🗺️ Interactive map of Poland with all monitoring stations
+- 🗺️ Interactive map with all monitoring stations — Poland and worldwide
 - 🎨 AQI-coloured station markers (Good → Hazardous scale)
 - 🔍 Station search by city or station name
 - 📊 Real-time pollutant measurements (PM2.5, PM10, NO2, O3, SO2, CO)
 - 📈 Historical trend charts for selected sensors
+- 🌤️ Current weather conditions (temperature, humidity, pressure, wind)
+- 📅 Historical weather charts with 24h / 7d range selector
 - 📱 Responsive design for desktop and mobile
 - ♿ Accessible (ARIA labels, keyboard navigation)
 - 🚨 Graceful error and loading states
@@ -81,8 +83,19 @@ Open [http://localhost:5173](http://localhost:5173)
 | Variable | Default | Description |
 |---|---|---|
 | `VITE_GIOS_API_BASE_URL` | `https://api.gios.gov.pl/pjp-api/rest` | GIOŚ API base URL |
+| `VITE_OPENAQ_API_KEY` | _(empty)_ | OpenAQ v3 API key for global stations |
 
 Copy `.env.example` to `.env.local` and adjust as needed.
+
+> **Note:** Deploying without an OpenAQ API key will show only Polish (GIOŚ) stations. Global stations require a free key from [explore.openaq.org](https://explore.openaq.org/register).
+
+## Data Sources
+
+| Source | Coverage | API |
+|---|---|---|
+| [GIOŚ](https://www.gios.gov.pl/) | Poland air quality | [api.gios.gov.pl](https://api.gios.gov.pl/pjp-api/swagger-ui/index.html) |
+| [OpenAQ](https://openaq.org/) | Global air quality | [api.openaq.org/v3](https://docs.openaq.org/) |
+| [Open-Meteo](https://open-meteo.com/) | Global weather | [api.open-meteo.com](https://open-meteo.com/en/docs) |
 
 ## Running Tests
 
@@ -125,6 +138,7 @@ GitHub Actions deploys automatically on push to `main`. Required secrets:
 | `SERVER_HOST` | Server IP or hostname |
 | `SERVER_USER` | SSH username |
 | `SSH_PRIVATE_KEY` | Private key for SSH access |
+| `OPENAQ_API_KEY` | OpenAQ API key (optional — enables global stations) |
 
 ### Health Check
 
