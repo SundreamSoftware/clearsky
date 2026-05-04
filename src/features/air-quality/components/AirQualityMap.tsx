@@ -8,8 +8,8 @@ import { StationMarker } from './StationMarker';
 interface AirQualityMapProps {
   stations: Station[];
   selectedStation: Station | null;
-  selectedStationId: number | null;
-  onStationSelect: (stationId: number) => void;
+  selectedStationId: string | null;
+  onStationSelect: (stationId: string) => void;
   isLoading: boolean;
   error: Error | null;
 }
