@@ -29,3 +29,21 @@ export function getAqiBadgeTextColour(level: number | null): 'black' | 'white' {
 
   return level <= 2 ? 'black' : 'white';
 }
+
+export function pm25ToAqiLevel(pm25: number): AqiLevel {
+  if (pm25 <= 12) return 0;
+  if (pm25 <= 35) return 1;
+  if (pm25 <= 55) return 2;
+  if (pm25 <= 150) return 3;
+  if (pm25 <= 250) return 4;
+  return 5;
+}
+
+export function usAqiToLevel(aqi: number): AqiLevel {
+  if (aqi <= 50) return 0;
+  if (aqi <= 100) return 1;
+  if (aqi <= 150) return 2;
+  if (aqi <= 200) return 3;
+  if (aqi <= 300) return 4;
+  return 5;
+}
