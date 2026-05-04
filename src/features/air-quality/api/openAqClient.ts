@@ -1,4 +1,5 @@
 import { createHttpClient } from '@/shared/api/createHttpClient';
+import { ApiRequestError } from '@/shared/api/apiError';
 import { OpenAqLocationPageSchema, OpenAqMeasurementPageSchema } from './openAq.schemas';
 import type { OpenAqLocationDto, OpenAqMeasurementDto } from './openAq.dto';
 
@@ -24,25 +25,33 @@ const client = createClient();
 
 export const openAqClient = {
   async getLocationsByBbox(bbox: OpenAqBbox): Promise<OpenAqLocationDto[]> {
-    if (!getApiKey()) {
-      return [];
+    try {
+      const { minLon, minLat, maxLon, maxLat } = bbox;
+      const raw = await client.get<unknown>(
+        `/locations?bbox=${minLon},${minLat},${maxLon},${maxLat}&limit=500`,
+      );
+      const parsed = OpenAqLocationPageSchema.parse(raw);
+      return parsed.results;
+    } catch (err) {
+      if (err instanceof ApiRequestError && (err.statusCode === 401 || err.statusCode === 403)) {
+        return [];
+      }
+      throw err;
     }
-    const { minLon, minLat, maxLon, maxLat } = bbox;
-    const raw = await client.get<unknown>(
-      `/locations?bbox=${minLon},${minLat},${maxLon},${maxLat}&limit=500`,
-    );
-    const parsed = OpenAqLocationPageSchema.parse(raw);
-    return parsed.results;
   },
 
   async getLatestMeasurements(sensorId: number): Promise<OpenAqMeasurementDto[]> {
-    if (!getApiKey()) {
-      return [];
+    try {
+      const raw = await client.get<unknown>(
+        `/sensors/${sensorId}/measurements?limit=1&period_name=hour`,
+      );
+      const parsed = OpenAqMeasurementPageSchema.parse(raw);
+      return parsed.results;
+    } catch (err) {
+      if (err instanceof ApiRequestError && (err.statusCode === 401 || err.statusCode === 403)) {
+        return [];
+      }
+      throw err;
     }
-    const raw = await client.get<unknown>(
-      `/sensors/${sensorId}/measurements?limit=1&period_name=hour`,
-    );
-    const parsed = OpenAqMeasurementPageSchema.parse(raw);
-    return parsed.results;
   },
 };
