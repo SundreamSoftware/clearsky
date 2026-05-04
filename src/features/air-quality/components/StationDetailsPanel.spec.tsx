@@ -194,4 +194,17 @@ describe('StationDetailsPanel', () => {
     fireEvent.click(screen.getAllByTestId('pollutant-card')[0]);
     expect(onSensorSelect).toHaveBeenCalledWith(101);
   });
+
+  it('renders chart hint when no sensor is selected', () => {
+    render(
+      <StationDetailsPanel
+        station={mockStation}
+        selectedSensorId={null}
+        onSensorSelect={() => {}}
+        onClose={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/Kliknij kartę/i)).toBeInTheDocument();
+  });
 });
