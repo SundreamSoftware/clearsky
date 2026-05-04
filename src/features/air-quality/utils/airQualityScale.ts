@@ -21,3 +21,11 @@ export function getAqiInfo(level: number | null): {
 
   return AQI_SCALE[level as AqiLevel];
 }
+
+export function getAqiBadgeTextColour(level: number | null): 'black' | 'white' {
+  if (level === null) {
+    return 'black';
+  }
+
+  return level <= 2 ? 'black' : 'white';
+}
