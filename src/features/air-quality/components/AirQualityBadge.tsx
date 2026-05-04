@@ -1,4 +1,4 @@
-import { getAqiInfo } from '@/features/air-quality/utils/airQualityScale';
+import { getAqiBadgeTextColour, getAqiInfo } from '@/features/air-quality/utils/airQualityScale';
 
 interface AirQualityBadgeProps {
   aqiLevel: number | null;
@@ -22,8 +22,13 @@ export function AirQualityBadge({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-semibold text-white ${sizeClasses[size]}`}
-      style={{ backgroundColor: colour }}
+      role="status"
+      aria-label={`Indeks jakości powietrza: ${aqiName ?? 'Brak danych'}`}
+      className={`inline-flex items-center rounded-full font-semibold ${sizeClasses[size]}`}
+      style={{
+        backgroundColor: colour,
+        color: getAqiBadgeTextColour(aqiLevel),
+      }}
     >
       {label}
     </span>
