@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AirQualityBadge } from '@/features/air-quality/components/AirQualityBadge';
 import { PollutantCard } from '@/features/air-quality/components/PollutantCard';
 import { PollutantChart } from '@/features/air-quality/components/PollutantChart';
@@ -9,6 +9,7 @@ import type { Sensor } from '@/features/air-quality/model/sensor.types';
 import type { Station } from '@/features/air-quality/model/station.types';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { WeatherPanel } from '@/features/weather/components/WeatherPanel';
+import { WeatherHistoryChart } from '@/features/weather/components/WeatherHistoryChart';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { formatDateTime } from '@/shared/utils/dateTime';
 
@@ -28,6 +29,7 @@ export function StationDetailsPanel({
   onClose,
 }: StationDetailsPanelProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const [chartRange, setChartRange] = useState<'24h' | '7d'>('24h');
   const stationId = station?.id ?? null;
   const { data: aqi, isLoading: aqiLoading, error: aqiError } = useAirQualityIndex(stationId);
   const {
@@ -131,9 +133,27 @@ export function StationDetailsPanel({
       </section>
 
       <div className="px-4 pb-4">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Wykres pomiarów
-        </h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Wykres pomiarów
+          </h3>
+          <div className="flex gap-1">
+            {(['24h', '7d'] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setChartRange(r)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  chartRange === r
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
         {selectedSensorId !== null ? (
           (() => {
             const sensor = supportedSensors.find((item) => item.id === selectedSensorId);
@@ -161,6 +181,13 @@ export function StationDetailsPanel({
           ) : weather ? (
             <WeatherPanel weather={weather} />
           ) : null}
+        </section>
+      )}
+
+      {station && (
+        <section className="border-t border-gray-100 px-5 py-4">
+          <h3 className="mb-3 text-sm font-medium text-gray-500">Historia pogody</h3>
+          <WeatherHistoryChart lat={station.latitude} lon={station.longitude} range={chartRange} />
         </section>
       )}
     </aside>
