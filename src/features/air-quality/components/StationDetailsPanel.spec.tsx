@@ -23,13 +23,15 @@ const mockUseStationSensors = vi.mocked(useStationSensors);
 const mockUseSensorMeasurements = vi.mocked(useSensorMeasurements);
 
 const mockStation: Station = {
-  id: 1,
+  id: '1',
   name: 'Warszawa - Centrum',
   city: 'Warszawa',
   address: 'ul. Centralna 1',
   latitude: 52.2,
   longitude: 21,
   voivodeship: null,
+  source: 'gios',
+  country: 'PL',
 };
 
 const mockSensors: Sensor[] = [

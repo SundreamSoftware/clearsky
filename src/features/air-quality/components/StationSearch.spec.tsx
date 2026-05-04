@@ -5,31 +5,37 @@ import { StationSearch } from './StationSearch';
 
 const mockStations: Station[] = [
   {
-    id: 1,
+    id: '1',
     name: 'Warszawa - Centrum',
     city: 'Warszawa',
     address: '',
     latitude: 52.2,
     longitude: 21.0,
     voivodeship: null,
+    source: 'gios',
+    country: 'PL',
   },
   {
-    id: 2,
+    id: '2',
     name: 'Kraków - Nowa Huta',
     city: 'Kraków',
     address: '',
     latitude: 50.0,
     longitude: 19.9,
     voivodeship: null,
+    source: 'gios',
+    country: 'PL',
   },
   {
-    id: 3,
+    id: '3',
     name: 'Gdańsk - Port',
     city: 'Gdańsk',
     address: '',
     latitude: 54.3,
     longitude: 18.6,
     voivodeship: null,
+    source: 'gios',
+    country: 'PL',
   },
 ];
 

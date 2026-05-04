@@ -27,13 +27,15 @@ vi.mock('react-leaflet', () => ({
 }));
 
 const station: Station = {
-  id: 42,
+  id: '42',
   name: 'Test Station',
   city: 'Testowo',
   address: '',
   latitude: 52.0,
   longitude: 21.0,
   voivodeship: null,
+  source: 'gios',
+  country: 'PL',
 };
 
 describe('StationMarker', () => {
@@ -46,7 +48,7 @@ describe('StationMarker', () => {
 
     fireEvent.click(screen.getByTestId('marker'));
 
-    expect(onSelect).toHaveBeenCalledWith(42);
+    expect(onSelect).toHaveBeenCalledWith('42');
   });
 
   it('applies correct fill colour for AQI level 0', () => {

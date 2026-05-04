@@ -30,22 +30,26 @@ vi.mock('react-leaflet', () => ({
 
 const mockStations: Station[] = [
   {
-    id: 1,
+    id: '1',
     name: 'Warszawa-Test',
     city: 'Warszawa',
     address: '',
     latitude: 52.2,
     longitude: 21.0,
     voivodeship: null,
+    source: 'gios',
+    country: 'PL',
   },
   {
-    id: 2,
+    id: '2',
     name: 'Kraków-Test',
     city: 'Kraków',
     address: '',
     latitude: 50.0,
     longitude: 19.9,
     voivodeship: null,
+    source: 'gios',
+    country: 'PL',
   },
 ];
 
