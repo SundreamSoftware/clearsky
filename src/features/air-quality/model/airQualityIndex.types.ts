@@ -1,5 +1,5 @@
 export interface AirQualityIndex {
-  stationId: number;
+  stationId: string;
   indexLevel: number | null;
   indexName: string | null;
   calculatedAt: string | null;
