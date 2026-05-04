@@ -16,6 +16,18 @@ vi.mock('@/features/air-quality/hooks/useStations', () => ({
   useStations: () => ({ data: [], isLoading: false, error: null }),
 }));
 
+vi.mock('@/features/air-quality/hooks/useAirQualityIndex', () => ({
+  useAirQualityIndex: () => ({ data: null, isLoading: false, error: null }),
+}));
+
+vi.mock('@/features/air-quality/hooks/useStationSensors', () => ({
+  useStationSensors: () => ({ data: [], isLoading: false, error: null }),
+}));
+
+vi.mock('@/features/air-quality/hooks/useSensorMeasurements', () => ({
+  useSensorMeasurements: () => ({ data: [], isLoading: false, error: null }),
+}));
+
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 test('renders ClearSky header', () => {
