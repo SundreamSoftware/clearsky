@@ -1,11 +1,16 @@
 import { type ReactNode } from 'react';
 import { Header } from './Header';
 
-export function Layout({ children }: { children: ReactNode }) {
+interface LayoutProps {
+  children: ReactNode;
+  header?: ReactNode;
+}
+
+export function Layout({ children, header }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
-      <main className="flex-1 container mx-auto px-4 py-6">{children}</main>
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <Header>{header}</Header>
+      <main className="flex-1 overflow-hidden">{children}</main>
     </div>
   );
 }
