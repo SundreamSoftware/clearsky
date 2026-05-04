@@ -25,6 +25,7 @@ const client = createClient();
 
 export const openAqClient = {
   async getLocationsByBbox(bbox: OpenAqBbox): Promise<OpenAqLocationDto[]> {
+    if (!getApiKey()) return [];
     try {
       const { minLon, minLat, maxLon, maxLat } = bbox;
       const raw = await client.get<unknown>(
@@ -41,6 +42,7 @@ export const openAqClient = {
   },
 
   async getLatestMeasurements(sensorId: number): Promise<OpenAqMeasurementDto[]> {
+    if (!getApiKey()) return [];
     try {
       const raw = await client.get<unknown>(
         `/sensors/${sensorId}/measurements?limit=1&period_name=hour`,
