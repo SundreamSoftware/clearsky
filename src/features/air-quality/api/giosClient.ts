@@ -1,26 +1,38 @@
 import { httpClient } from '@/shared/api/httpClient';
 import {
-  StationListDtoSchema,
+  StationPageDtoSchema,
   SensorListDtoSchema,
   MeasurementsDtoSchema,
   AqiDtoSchema,
 } from './gios.schemas';
-import type {
-  StationDto,
-  SensorDto,
-  MeasurementsDto,
-  AqiDto,
-} from './gios.dto';
+import type { StationDto, SensorDto, MeasurementsDto, AqiDto } from './gios.dto';
 
 export const giosClient = {
   async getStations(): Promise<StationDto[]> {
-    const raw = await httpClient.get<unknown>('/station/findAll');
-    return StationListDtoSchema.parse(raw);
+    const firstPage = await httpClient.get<unknown>('/station/findAll?size=20&page=0');
+    const parsed = StationPageDtoSchema.parse(firstPage);
+    const { totalPages } = parsed;
+    const stations = [...parsed['Lista stacji pomiarowych']];
+
+    if (totalPages > 1) {
+      const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 1);
+      const results = await Promise.all(
+        remainingPages.map((page) =>
+          httpClient
+            .get<unknown>(`/station/findAll?size=20&page=${page}`)
+            .then((raw) => StationPageDtoSchema.parse(raw)['Lista stacji pomiarowych']),
+        ),
+      );
+      stations.push(...results.flat());
+    }
+
+    return stations;
   },
 
   async getSensors(stationId: number): Promise<SensorDto[]> {
     const raw = await httpClient.get<unknown>(`/station/sensors/${stationId}`);
-    return SensorListDtoSchema.parse(raw);
+    const parsed = SensorListDtoSchema.parse(raw);
+    return parsed['Lista stanowisk pomiarowych dla podanej stacji'];
   },
 
   async getMeasurements(sensorId: number): Promise<MeasurementsDto> {
