@@ -36,7 +36,7 @@ jobs:
       - name: Build app
         run: npm run build
         env:
-          VITE_GIOS_API_BASE_URL: https://api.gios.gov.pl/pjp-api/rest
+          VITE_GIOS_API_BASE_URL: /api
 
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
