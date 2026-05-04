@@ -13,6 +13,10 @@ const dto: AqiDto = {
 };
 
 describe('mapAqiDto', () => {
+  it('maps stationId as string', () => {
+    expect(mapAqiDto(dto).stationId).toBe('114');
+  });
+
   it('maps indexLevel from Wartość indeksu', () => {
     expect(mapAqiDto(dto).indexLevel).toBe(1);
   });
