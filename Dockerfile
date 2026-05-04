@@ -4,6 +4,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+# Bake in the proxy path so browser requests route through Nginx /api/ → GIOŚ
+ARG VITE_GIOS_API_BASE_URL=/api
+ENV VITE_GIOS_API_BASE_URL=$VITE_GIOS_API_BASE_URL
 RUN npm run build
 
 # Stage 2: Serve with Nginx
