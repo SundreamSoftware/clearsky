@@ -11,6 +11,7 @@ interface StationSearchProps {
 }
 
 const MAX_RESULTS = 10;
+const LISTBOX_ID = 'station-search-listbox';
 
 export function StationSearch({ stations, onStationSelect }: StationSearchProps) {
   const [query, setQuery] = useState('');
@@ -94,11 +95,13 @@ export function StationSearch({ stations, onStationSelect }: StationSearchProps)
           />
         </svg>
         <input
-          type="text"
+          type="search"
           role="combobox"
-          aria-expanded={isOpen && hasDebouncedQuery}
+          aria-expanded={isOpen}
           aria-haspopup="listbox"
           aria-autocomplete="list"
+          aria-controls={LISTBOX_ID}
+          aria-activedescendant={highlightedIndex >= 0 ? `result-${highlightedIndex}` : undefined}
           value={query}
           onChange={(event) => {
             const nextQuery = event.target.value;
@@ -122,6 +125,8 @@ export function StationSearch({ stations, onStationSelect }: StationSearchProps)
             stations={results}
             highlightedIndex={highlightedIndex}
             onSelect={handleSelect}
+            listboxId={LISTBOX_ID}
+            getOptionId={(index) => `result-${index}`}
           />
         </div>
       )}
