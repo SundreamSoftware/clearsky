@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import 'leaflet/dist/leaflet.css';
+import '@/shared/utils/leafletIcons';
 import { Providers } from './app/providers';
 import App from './app/App';
 import './index.css';
