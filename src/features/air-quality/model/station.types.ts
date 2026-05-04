@@ -10,4 +10,5 @@ export interface Station {
   voivodeship: string | null;
   source: StationSource;
   country: string | null;
+  sensorIds?: { pm25?: number };
 }
