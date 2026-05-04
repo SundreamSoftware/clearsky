@@ -1,8 +1,11 @@
 import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
   plugins: [react()],
   resolve: {
     alias: {
@@ -16,6 +19,17 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/openaq-api': {
+        target: 'https://api.openaq.org/v3',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/openaq-api/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            const key = env.VITE_OPENAQ_API_KEY;
+            if (key && key !== 'undefined') proxyReq.setHeader('X-API-Key', key);
+          });
+        },
+      },
     },
   },
   test: {
@@ -25,4 +39,5 @@ export default defineConfig({
     exclude: ['tests/e2e/**', 'node_modules/**'],
     coverage: { provider: 'v8', reporter: ['text', 'html'] },
   },
+  };
 });

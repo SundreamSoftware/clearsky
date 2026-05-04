@@ -10,22 +10,11 @@ export type OpenAqBbox = {
   maxLat: number;
 };
 
-function getApiKey(): string | undefined {
-  const key = import.meta.env.VITE_OPENAQ_API_KEY as string | undefined;
-  return key && key !== 'undefined' && key.trim() !== '' ? key : undefined;
-}
-
-function createClient() {
-  const apiKey = getApiKey();
-  const headers: Record<string, string> = apiKey ? { 'X-API-Key': apiKey } : {};
-  return createHttpClient('https://api.openaq.org/v3', headers);
-}
-
-const client = createClient();
+// Key is injected server-side (Vite proxy in dev, Nginx in prod) — no client-side auth header
+const client = createHttpClient('/openaq-api');
 
 export const openAqClient = {
   async getLocationsByBbox(bbox: OpenAqBbox): Promise<OpenAqLocationDto[]> {
-    if (!getApiKey()) return [];
     try {
       const { minLon, minLat, maxLon, maxLat } = bbox;
       const raw = await client.get<unknown>(
@@ -42,7 +31,6 @@ export const openAqClient = {
   },
 
   async getLatestMeasurements(sensorId: number): Promise<OpenAqMeasurementDto[]> {
-    if (!getApiKey()) return [];
     try {
       const raw = await client.get<unknown>(
         `/sensors/${sensorId}/measurements?limit=1&period_name=hour`,

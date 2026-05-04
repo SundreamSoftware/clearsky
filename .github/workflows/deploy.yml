@@ -7,6 +7,7 @@ on:
 
 env:
   IMAGE_NAME: ghcr.io/sundreamsoftware/clearsky:latest
+  OPENAQ_API_KEY: ${{ secrets.OPENAQ_API_KEY }}
 
 jobs:
   build-and-deploy:
@@ -42,20 +43,24 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME --build-arg VITE_OPENAQ_API_KEY=${{ secrets.OPENAQ_API_KEY }} .
+        run: docker build -t $IMAGE_NAME .
 
       - name: Push Docker image
         run: docker push $IMAGE_NAME
 
       - name: Deploy and verify via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          OPENAQ_API_KEY: ${{ secrets.OPENAQ_API_KEY }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: OPENAQ_API_KEY
           script_stop: true
           script: |
             cd /opt/clearsky
+            echo "OPENAQ_API_KEY=$OPENAQ_API_KEY" > .env
             docker compose pull
             docker compose up -d --remove-orphans
             docker image prune -f
