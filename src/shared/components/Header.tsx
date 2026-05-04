@@ -6,14 +6,13 @@ interface HeaderProps {
 
 export function Header({ children }: HeaderProps) {
   return (
-    <header className="relative z-10 bg-white shadow-sm">
-      <div className="container mx-auto flex items-center gap-4 px-4 py-3">
-        <div className="shrink-0">
-          <h1 className="leading-none text-xl font-bold text-brand">ClearSky</h1>
-          <p className="text-xs text-gray-400">Jakość powietrza w Polsce</p>
-        </div>
-        {children && <div className="flex-1">{children}</div>}
-      </div>
+    <header className="relative z-10 flex h-16 items-center border-b bg-white px-4 shadow-sm">
+      <span className="mr-1 text-2xl" aria-hidden="true">
+        🌤
+      </span>
+      <h1 className="text-xl font-bold text-brand">ClearSky</h1>
+      <span className="ml-2 hidden text-sm text-gray-500 sm:inline">Jakość Powietrza w Polsce</span>
+      {children && <div className="ml-auto flex-1 max-w-md pl-4">{children}</div>}
     </header>
   );
 }
