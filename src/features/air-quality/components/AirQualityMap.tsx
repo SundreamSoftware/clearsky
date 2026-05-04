@@ -10,6 +10,7 @@ interface AirQualityMapProps {
   stations: Station[];
   selectedStation: Station | null;
   selectedStationId: string | null;
+  selectedAqiLevel: number | null;
   onStationSelect: (stationId: string) => void;
   onBoundsChange?: (bounds: MapBounds) => void;
   isLoading: boolean;
@@ -56,6 +57,7 @@ export function AirQualityMap({
   stations,
   selectedStation,
   selectedStationId,
+  selectedAqiLevel,
   onStationSelect,
   onBoundsChange,
   isLoading,
@@ -94,7 +96,7 @@ export function AirQualityMap({
           <StationMarker
             key={station.id}
             station={station}
-            aqiLevel={null}
+            aqiLevel={station.id === selectedStationId ? selectedAqiLevel : null}
             isSelected={station.id === selectedStationId}
             onSelect={onStationSelect}
           />
