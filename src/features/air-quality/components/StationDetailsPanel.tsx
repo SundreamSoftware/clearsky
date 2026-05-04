@@ -48,7 +48,7 @@ export function StationDetailsPanel({
   }
 
   return (
-    <aside className="flex min-h-full flex-col">
+    <aside className="flex min-h-full flex-col" data-testid="station-details-panel">
       <div className="border-b border-gray-100 px-5 pb-5 pt-3">
         <div className="mb-3 flex items-start justify-between gap-4">
           <div>
