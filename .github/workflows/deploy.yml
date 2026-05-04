@@ -42,7 +42,7 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME .
+        run: docker build -t $IMAGE_NAME --build-arg VITE_OPENAQ_API_KEY=${{ secrets.OPENAQ_API_KEY }} .
 
       - name: Push Docker image
         run: docker push $IMAGE_NAME
