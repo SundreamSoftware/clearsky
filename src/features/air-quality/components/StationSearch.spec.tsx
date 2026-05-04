@@ -107,6 +107,45 @@ describe('StationSearch', () => {
     expect(screen.getByText(/nie znaleziono/i)).toBeInTheDocument();
   });
 
+  it('has correct ARIA attributes on input', () => {
+    render(<StationSearch stations={mockStations} onStationSelect={() => {}} />);
+
+    const input = screen.getByTestId('search-input');
+    expect(input).toHaveAttribute('role', 'combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).toHaveAttribute('aria-haspopup', 'listbox');
+  });
+
+  it('sets aria-expanded to true when dropdown is open', () => {
+    render(<StationSearch stations={mockStations} onStationSelect={() => {}} />);
+
+    const input = screen.getByTestId('search-input');
+    fireEvent.change(input, { target: { value: 'Warszawa' } });
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('sets aria-selected on highlighted result', () => {
+    render(<StationSearch stations={mockStations} onStationSelect={() => {}} />);
+
+    const input = screen.getByTestId('search-input');
+    fireEvent.change(input, { target: { value: 'Warszawa' } });
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.getByTestId('search-dropdown')).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('supports keyboard navigation and selection', () => {
     const onSelect = vi.fn();
 
