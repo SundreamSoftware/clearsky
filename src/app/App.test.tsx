@@ -9,6 +9,7 @@ vi.mock('react-leaflet', () => ({
   TileLayer: () => null,
   CircleMarker: () => null,
   Tooltip: () => null,
+  useMap: () => ({ flyTo: vi.fn() }),
 }));
 
 vi.mock('@/features/air-quality/hooks/useStations', () => ({
