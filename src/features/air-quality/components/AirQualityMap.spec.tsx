@@ -54,6 +54,7 @@ describe('AirQualityMap', () => {
     render(
       <AirQualityMap
         stations={[]}
+        selectedStation={null}
         selectedStationId={null}
         onStationSelect={() => {}}
         isLoading={false}
@@ -68,6 +69,7 @@ describe('AirQualityMap', () => {
     render(
       <AirQualityMap
         stations={[]}
+        selectedStation={null}
         selectedStationId={null}
         onStationSelect={() => {}}
         isLoading={true}
@@ -82,6 +84,7 @@ describe('AirQualityMap', () => {
     render(
       <AirQualityMap
         stations={[]}
+        selectedStation={null}
         selectedStationId={null}
         onStationSelect={() => {}}
         isLoading={false}
@@ -96,6 +99,7 @@ describe('AirQualityMap', () => {
     render(
       <AirQualityMap
         stations={mockStations}
+        selectedStation={null}
         selectedStationId={null}
         onStationSelect={() => {}}
         isLoading={false}
