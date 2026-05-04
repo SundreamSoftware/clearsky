@@ -1,0 +1,12 @@
+[
+  {
+    "id": 101,
+    "stationId": 1,
+    "param": { "paramCode": "PM2.5", "paramName": "pył zawieszony PM2.5", "idParam": 69 }
+  },
+  {
+    "id": 102,
+    "stationId": 1,
+    "param": { "paramCode": "PM10", "paramName": "pył zawieszony PM10", "idParam": 3 }
+  }
+]
