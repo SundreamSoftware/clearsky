@@ -1,6 +1,6 @@
 import { AirQualityBadge } from '@/features/air-quality/components/AirQualityBadge';
 import { PollutantCard } from '@/features/air-quality/components/PollutantCard';
-import { SensorMeasurementsTable } from '@/features/air-quality/components/SensorMeasurementsTable';
+import { PollutantChart } from '@/features/air-quality/components/PollutantChart';
 import { useAirQualityIndex } from '@/features/air-quality/hooks/useAirQualityIndex';
 import { useSensorMeasurements } from '@/features/air-quality/hooks/useSensorMeasurements';
 import { useStationSensors } from '@/features/air-quality/hooks/useStationSensors';
@@ -33,7 +33,6 @@ export function StationDetailsPanel({
   const supportedSensors = sensors.filter((sensor) =>
     SUPPORTED_POLLUTANTS.includes(sensor.parameterCode as (typeof SUPPORTED_POLLUTANTS)[number]),
   );
-  const selectedSensor = supportedSensors.find((sensor) => sensor.id === selectedSensorId) ?? null;
 
   if (!station) {
     return null;
@@ -110,21 +109,28 @@ export function StationDetailsPanel({
         )}
       </section>
 
-      <section className="px-5 py-4">
-        <div className="mb-4">
-          <p className="text-sm font-medium text-gray-500">Sensor selector</p>
-          <p className="text-sm text-gray-600">
-            {selectedSensor
-              ? `${selectedSensor.parameterName} (${selectedSensor.parameterCode})`
-              : 'Wybierz zanieczyszczenie, aby zobaczyć historię pomiarów.'}
-          </p>
-        </div>
-        {selectedSensor ? (
-          <SelectedSensorMeasurements sensor={selectedSensor} />
+      <div className="px-4 pb-4">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Wykres pomiarów
+        </h3>
+        {selectedSensorId !== null ? (
+          (() => {
+            const sensor = supportedSensors.find((item) => item.id === selectedSensorId);
+            return sensor ? (
+              <PollutantChart
+                sensorId={selectedSensorId}
+                parameterCode={sensor.parameterCode}
+                parameterName={sensor.parameterName}
+                unit={sensor.unit}
+              />
+            ) : null;
+          })()
         ) : (
-          <p className="text-sm text-gray-500">Brak wybranego sensora.</p>
+          <p className="py-4 text-center text-sm text-gray-400">
+            Kliknij kartę czujnika, aby zobaczyć wykres.
+          </p>
         )}
-      </section>
+      </div>
     </aside>
   );
 }
@@ -152,20 +158,3 @@ function PollutantCardWithData({
   );
 }
 
-function SelectedSensorMeasurements({ sensor }: { sensor: Sensor }) {
-  const {
-    data: measurements = [],
-    isLoading,
-    error,
-  } = useSensorMeasurements(sensor.id);
-
-  if (isLoading) {
-    return <div className="animate-pulse rounded-xl bg-gray-100 h-40" />;
-  }
-
-  if (error) {
-    return <p className="text-sm text-red-500">Błąd ładowania pomiarów</p>;
-  }
-
-  return <SensorMeasurementsTable measurements={measurements} unit={sensor.unit} />;
-}
