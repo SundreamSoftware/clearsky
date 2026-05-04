@@ -14,7 +14,15 @@ const dto: StationDto = {
 
 describe('mapStationDto', () => {
   it('maps id correctly', () => {
-    expect(mapStationDto(dto).id).toBe(114);
+    expect(mapStationDto(dto).id).toBe('114');
+  });
+
+  it('sets source to gios', () => {
+    expect(mapStationDto(dto).source).toBe('gios');
+  });
+
+  it('sets country to PL', () => {
+    expect(mapStationDto(dto).country).toBe('PL');
   });
 
   it('parses latitude as float', () => {
