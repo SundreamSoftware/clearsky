@@ -9,7 +9,7 @@ import { ErrorState } from '@/shared/components/ErrorState';
 import { Layout } from '@/shared/components/Layout';
 
 function App() {
-  const [selectedStationId, setSelectedStationId] = useState<number | null>(null);
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [selectedSensorId, setSelectedSensorId] = useState<number | null>(null);
   const { data: stations = [], isLoading, error } = useStations();
 
@@ -20,7 +20,7 @@ function App() {
     setSelectedSensorId(null);
   }
 
-  function handleMapStationSelect(stationId: number) {
+  function handleMapStationSelect(stationId: string) {
     setSelectedStationId(stationId);
     setSelectedSensorId(null);
   }
