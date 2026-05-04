@@ -29,7 +29,7 @@ export const giosClient = {
     return stations;
   },
 
-  async getSensors(stationId: number): Promise<SensorDto[]> {
+  async getSensors(stationId: string): Promise<SensorDto[]> {
     const raw = await httpClient.get<unknown>(`/station/sensors/${stationId}`);
     const parsed = SensorListDtoSchema.parse(raw);
     return parsed['Lista stanowisk pomiarowych dla podanej stacji'];
@@ -40,7 +40,7 @@ export const giosClient = {
     return MeasurementsDtoSchema.parse(raw);
   },
 
-  async getAirQualityIndex(stationId: number): Promise<AqiDto> {
+  async getAirQualityIndex(stationId: string): Promise<AqiDto> {
     const raw = await httpClient.get<unknown>(`/aqindex/getIndex/${stationId}`);
     return AqiDtoSchema.parse(raw);
   },
