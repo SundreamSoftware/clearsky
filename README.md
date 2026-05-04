@@ -149,7 +149,3 @@ curl https://clearsky.sundreamsoftware.pl/health
 ## Project Structure
 
 See the [Architecture section](#architecture) for the main source layout.
-
-## License
-
-MIT
