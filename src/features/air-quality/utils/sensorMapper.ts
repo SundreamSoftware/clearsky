@@ -15,12 +15,13 @@ export function resolveUnit(paramCode: string): string {
 }
 
 export function mapSensorDto(dto: SensorDto): Sensor {
+  const paramCode = dto['Wskaźnik - kod'];
   return {
-    id: dto.id,
-    stationId: dto.stationId,
-    parameterCode: dto.param.paramCode,
-    parameterName: dto.param.paramName,
-    unit: resolveUnit(dto.param.paramCode),
+    id: dto['Identyfikator stanowiska'],
+    stationId: dto['Identyfikator stacji'],
+    parameterCode: paramCode,
+    parameterName: dto['Wskaźnik'],
+    unit: resolveUnit(paramCode),
   };
 }
 
