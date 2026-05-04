@@ -21,3 +21,22 @@ export const OpenMeteoCurrentSchema = z.object({
     wind_direction_10m: z.number(),
   }),
 });
+
+export const OpenMeteoHourlySchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  hourly_units: z
+    .object({
+      time: z.string().optional(),
+      temperature_2m: z.string().optional(),
+      relative_humidity_2m: z.string().optional(),
+      wind_speed_10m: z.string().optional(),
+    })
+    .optional(),
+  hourly: z.object({
+    time: z.array(z.string()),
+    temperature_2m: z.array(z.number().nullable()),
+    relative_humidity_2m: z.array(z.number().nullable()),
+    wind_speed_10m: z.array(z.number().nullable()),
+  }),
+});
