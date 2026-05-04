@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import type { Station } from '@/features/air-quality/model/station.types';
+import type { MapBounds } from '@/features/air-quality/hooks/useGlobalStations';
 import { ErrorState } from '@/shared/components/ErrorState';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { StationMarker } from './StationMarker';
@@ -10,16 +11,32 @@ interface AirQualityMapProps {
   selectedStation: Station | null;
   selectedStationId: string | null;
   onStationSelect: (stationId: string) => void;
+  onBoundsChange?: (bounds: MapBounds) => void;
   isLoading: boolean;
   error: Error | null;
 }
 
 interface MapControllerProps {
   selectedStation: Station | null;
+  onBoundsChange?: (bounds: MapBounds) => void;
 }
 
-function MapController({ selectedStation }: MapControllerProps) {
+function MapController({ selectedStation, onBoundsChange }: MapControllerProps) {
   const map = useMap();
+
+  useMapEvents({
+    moveend: () => {
+      if (onBoundsChange) {
+        const b = map.getBounds();
+        onBoundsChange({
+          minLon: b.getWest(),
+          minLat: b.getSouth(),
+          maxLon: b.getEast(),
+          maxLat: b.getNorth(),
+        });
+      }
+    },
+  });
 
   useEffect(() => {
     if (selectedStation) {
@@ -40,6 +57,7 @@ export function AirQualityMap({
   selectedStation,
   selectedStationId,
   onStationSelect,
+  onBoundsChange,
   isLoading,
   error,
 }: AirQualityMapProps) {
@@ -67,7 +85,7 @@ export function AirQualityMap({
         className="h-full w-full"
         data-testid="map"
       >
-        <MapController selectedStation={selectedStation} />
+        <MapController selectedStation={selectedStation} onBoundsChange={onBoundsChange} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
