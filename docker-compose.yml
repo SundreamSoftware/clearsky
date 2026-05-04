@@ -1,0 +1,17 @@
+services:
+  clearsky-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clearsky-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5010:80"
+    environment:
+      - VITE_GIOS_API_BASE_URL=${VITE_GIOS_API_BASE_URL:-https://api.gios.gov.pl/pjp-api/rest}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
