@@ -4,22 +4,26 @@ import type { Station } from '../model/station.types';
 
 const stations: Station[] = [
   {
-    id: 1,
+    id: '1',
     name: 'Warszawa-Marszałkowska',
     city: 'Warszawa',
     address: '',
     latitude: 52.2,
     longitude: 21,
     voivodeship: null,
+    source: 'gios',
+    country: 'PL',
   },
   {
-    id: 2,
+    id: '2',
     name: 'Kraków-Aleje Krasińskiego',
     city: 'Kraków',
     address: '',
     latitude: 50,
     longitude: 19.9,
     voivodeship: null,
+    source: 'gios',
+    country: 'PL',
   },
 ];
 
