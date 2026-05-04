@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://api.gios.gov.pl/pjp-api/rest',
+        target: 'https://api.gios.gov.pl/pjp-api/v1/rest',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
