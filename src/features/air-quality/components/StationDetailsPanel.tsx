@@ -158,7 +158,7 @@ function PollutantCardWithData({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const { data: measurements = [], isLoading } = useSensorMeasurements(sensor.id);
+  const { data: measurements = [], isLoading } = useSensorMeasurements(sensor.id, sensor.parameterCode);
   const latestMeasurement = measurements[0] ?? null;
 
   return (
