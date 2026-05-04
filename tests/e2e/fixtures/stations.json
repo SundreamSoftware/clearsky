@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "stationName": "Warszawa - Centrum",
+    "gegrLat": "52.2297",
+    "gegrLon": "21.0122",
+    "city": { "id": 1, "name": "Warszawa", "commune": { "provinceName": "MAZOWIECKIE" } },
+    "addressStreet": "ul. Marszałkowska"
+  },
+  {
+    "id": 2,
+    "stationName": "Kraków - Nowa Huta",
+    "gegrLat": "50.0647",
+    "gegrLon": "19.9450",
+    "city": { "id": 2, "name": "Kraków", "commune": { "provinceName": "MAŁOPOLSKIE" } },
+    "addressStreet": "ul. Bulwarowa"
+  },
+  {
+    "id": 3,
+    "stationName": "Gdańsk - Port",
+    "gegrLat": "54.3520",
+    "gegrLon": "18.6466",
+    "city": { "id": 3, "name": "Gdańsk", "commune": { "provinceName": "POMORSKIE" } },
+    "addressStreet": "ul. Portowa"
+  }
+]
