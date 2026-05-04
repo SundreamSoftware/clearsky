@@ -25,6 +25,6 @@ export function mapSensorDto(dto: SensorDto): Sensor {
   };
 }
 
-export function mapSensorListDto(dtos: SensorDto[], _stationId: number): Sensor[] {
+export function mapSensorListDto(dtos: SensorDto[], _stationId: string): Sensor[] {
   return dtos.map(mapSensorDto);
 }
