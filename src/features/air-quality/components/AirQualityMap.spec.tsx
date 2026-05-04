@@ -61,6 +61,7 @@ describe('AirQualityMap', () => {
         stations={[]}
         selectedStation={null}
         selectedStationId={null}
+        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={false}
         error={null}
@@ -76,6 +77,7 @@ describe('AirQualityMap', () => {
         stations={[]}
         selectedStation={null}
         selectedStationId={null}
+        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={true}
         error={null}
@@ -91,6 +93,7 @@ describe('AirQualityMap', () => {
         stations={[]}
         selectedStation={null}
         selectedStationId={null}
+        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={false}
         error={new Error('Network error')}
@@ -106,6 +109,7 @@ describe('AirQualityMap', () => {
         stations={mockStations}
         selectedStation={null}
         selectedStationId={null}
+        selectedAqiLevel={null}
         onStationSelect={() => {}}
         isLoading={false}
         error={null}
