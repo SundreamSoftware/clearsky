@@ -23,12 +23,7 @@ export default defineConfig(({ mode }) => {
         target: 'https://api.openaq.org/v3',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/openaq-api/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            const key = env.VITE_OPENAQ_API_KEY;
-            if (key && key !== 'undefined') proxyReq.setHeader('X-API-Key', key);
-          });
-        },
+        headers: env.VITE_OPENAQ_API_KEY ? { 'X-API-Key': env.VITE_OPENAQ_API_KEY } : {},
       },
     },
   },
