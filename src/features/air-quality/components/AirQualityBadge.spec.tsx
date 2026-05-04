@@ -23,6 +23,18 @@ describe('AirQualityBadge', () => {
     expect(badge.style.backgroundColor).toBeTruthy();
   });
 
+  it('uses black text for good AQI levels (0-2)', () => {
+    const { container } = render(<AirQualityBadge aqiLevel={1} aqiName="Dobry" />);
+    const badge = container.firstChild as HTMLElement;
+    expect(badge.style.color).toBe('black');
+  });
+
+  it('uses white text for bad AQI levels (3+)', () => {
+    const { container } = render(<AirQualityBadge aqiLevel={4} aqiName="Zły" />);
+    const badge = container.firstChild as HTMLElement;
+    expect(badge.style.color).toBe('white');
+  });
+
   it('renders small size', () => {
     render(<AirQualityBadge aqiLevel={0} aqiName="Bardzo dobry" size="sm" />);
     expect(screen.getByText('Bardzo dobry')).toBeInTheDocument();
