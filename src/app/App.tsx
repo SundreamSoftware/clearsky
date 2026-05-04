@@ -4,8 +4,6 @@ import { StationDetailsPanel } from '@/features/air-quality/components/StationDe
 import { StationSearch } from '@/features/air-quality/components/StationSearch';
 import { useStations } from '@/features/air-quality/hooks/useStations';
 import { useGlobalStations } from '@/features/air-quality/hooks/useGlobalStations';
-import { useAirQualityIndex } from '@/features/air-quality/hooks/useAirQualityIndex';
-import { useOpenAqAqi } from '@/features/air-quality/hooks/useOpenAqAqi';
 import type { MapBounds } from '@/features/air-quality/hooks/useGlobalStations';
 import type { Station } from '@/features/air-quality/model/station.types';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
@@ -36,14 +34,6 @@ function App() {
   const allStations = [...giosStations, ...filteredGlobalStations];
 
   const selectedStation = allStations.find((station) => station.id === selectedStationId) ?? null;
-
-  const { data: giosAqi } = useAirQualityIndex(
-    selectedStation?.source === 'gios' ? selectedStation.id : null,
-  );
-  const { data: openAqAqi } = useOpenAqAqi(
-    selectedStation?.source === 'openaq' ? selectedStation : null,
-  );
-  const selectedAqiLevel = giosAqi?.indexLevel ?? openAqAqi?.indexLevel ?? null;
 
   function handleStationSelect(station: Station) {
     setSelectedStationId(station.id);
@@ -77,7 +67,6 @@ function App() {
             stations={allStations}
             selectedStation={selectedStation}
             selectedStationId={selectedStationId}
-            selectedAqiLevel={selectedAqiLevel}
             onStationSelect={handleMapStationSelect}
             onBoundsChange={handleBoundsChange}
             isLoading={isLoading}
