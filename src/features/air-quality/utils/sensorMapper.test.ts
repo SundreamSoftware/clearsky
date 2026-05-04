@@ -3,13 +3,12 @@ import { mapSensorDto, resolveUnit } from './sensorMapper';
 import type { SensorDto } from '../api/gios.dto';
 
 const dto: SensorDto = {
-  id: 101,
-  stationId: 114,
-  param: {
-    paramCode: 'PM2.5',
-    paramName: 'pył zawieszony PM2.5',
-    idParam: 69,
-  },
+  'Identyfikator stanowiska': 101,
+  'Identyfikator stacji': 114,
+  'Wskaźnik': 'pył zawieszony PM2.5',
+  'Wskaźnik - kod': 'PM2.5',
+  'Wskaźnik - wzór': 'PM2,5',
+  'Id wskaźnika': 69,
 };
 
 describe('mapSensorDto', () => {
