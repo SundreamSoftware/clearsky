@@ -6,7 +6,7 @@ interface StationMarkerProps {
   station: Station;
   aqiLevel: number | null;
   isSelected: boolean;
-  onSelect: (stationId: number) => void;
+  onSelect: (stationId: string) => void;
 }
 
 export function StationMarker({
