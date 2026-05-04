@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { giosClient } from '../api/giosClient';
 import { mapAqiDto } from '../utils/airQualityIndexMapper';
 
-export function useAirQualityIndex(stationId: number | null) {
+export function useAirQualityIndex(stationId: string | null) {
   return useQuery({
     queryKey: ['aqindex', stationId],
     queryFn: async () => {
