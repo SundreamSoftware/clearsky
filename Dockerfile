@@ -14,5 +14,6 @@ FROM nginx:alpine AS runner
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.container.conf /etc/nginx/nginx.container.conf.template
 EXPOSE 80
-# Use envsubst to inject OPENAQ_API_KEY at container start (runtime, not build time)
-CMD ["/bin/sh", "-c", "envsubst '${OPENAQ_API_KEY}' < /etc/nginx/nginx.container.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+# If OPENAQ_API_KEY is set, substitute it into the config; otherwise strip the header line
+# so nginx never gets an empty proxy_set_header value (which is a fatal syntax error).
+CMD ["/bin/sh", "-c", "if [ -n \"$OPENAQ_API_KEY\" ]; then envsubst '${OPENAQ_API_KEY}' < /etc/nginx/nginx.container.conf.template > /etc/nginx/conf.d/default.conf; else sed '/X-API-Key/d' /etc/nginx/nginx.container.conf.template > /etc/nginx/conf.d/default.conf; fi && nginx -g 'daemon off;'"]
