@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { giosClient } from '../api/giosClient';
 import { mapSensorListDto } from '../utils/sensorMapper';
 
-export function useStationSensors(stationId: number | null) {
+export function useStationSensors(stationId: string | null) {
   return useQuery({
     queryKey: ['sensors', stationId],
     queryFn: async () => {
