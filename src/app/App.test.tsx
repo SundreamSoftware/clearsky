@@ -25,6 +25,10 @@ vi.mock('@/features/air-quality/hooks/useAirQualityIndex', () => ({
   useAirQualityIndex: () => ({ data: null, isLoading: false, error: null }),
 }));
 
+vi.mock('@/features/air-quality/hooks/useOpenAqAqi', () => ({
+  useOpenAqAqi: () => ({ data: null, isLoading: false, error: null }),
+}));
+
 vi.mock('@/features/air-quality/hooks/useStationSensors', () => ({
   useStationSensors: () => ({ data: [], isLoading: false, error: null }),
 }));
