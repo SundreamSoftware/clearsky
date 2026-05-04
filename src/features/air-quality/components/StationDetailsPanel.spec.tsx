@@ -175,7 +175,7 @@ describe('StationDetailsPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByLabelText('Zamknij panel'));
+    fireEvent.click(screen.getByLabelText('Zamknij szczegóły stacji'));
     expect(onClose).toHaveBeenCalled();
   });
 
