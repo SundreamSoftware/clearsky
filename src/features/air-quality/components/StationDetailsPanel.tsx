@@ -7,6 +7,9 @@ import { useSensorMeasurements } from '@/features/air-quality/hooks/useSensorMea
 import { useStationSensors } from '@/features/air-quality/hooks/useStationSensors';
 import type { Sensor } from '@/features/air-quality/model/sensor.types';
 import type { Station } from '@/features/air-quality/model/station.types';
+import { useWeather } from '@/features/weather/hooks/useWeather';
+import { WeatherPanel } from '@/features/weather/components/WeatherPanel';
+import { LoadingState } from '@/shared/components/LoadingState';
 import { formatDateTime } from '@/shared/utils/dateTime';
 
 interface StationDetailsPanelProps {
@@ -32,6 +35,10 @@ export function StationDetailsPanel({
     isLoading: sensorsLoading,
     error: sensorsError,
   } = useStationSensors(stationId);
+  const {
+    data: weather,
+    isLoading: weatherLoading,
+  } = useWeather(station?.latitude ?? null, station?.longitude ?? null);
 
   const supportedSensors = sensors.filter((sensor) =>
     SUPPORTED_POLLUTANTS.includes(sensor.parameterCode as (typeof SUPPORTED_POLLUTANTS)[number]),
@@ -145,6 +152,17 @@ export function StationDetailsPanel({
           </p>
         )}
       </div>
+
+      {(weatherLoading || weather) && (
+        <section className="border-t border-gray-100 px-5 py-4">
+          <h3 className="mb-3 text-sm font-medium text-gray-500">Warunki pogodowe</h3>
+          {weatherLoading ? (
+            <LoadingState message="Ładowanie pogody..." />
+          ) : weather ? (
+            <WeatherPanel weather={weather} />
+          ) : null}
+        </section>
+      )}
     </aside>
   );
 }
