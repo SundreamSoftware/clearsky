@@ -151,7 +151,7 @@ export function AirQualityMap({
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden rounded-lg shadow-md"
+      className="relative h-full w-full overflow-hidden rounded-lg shadow-md isolate"
       data-testid="map-container"
     >
       {isLoading && (

@@ -1,13 +1,11 @@
 import { useRef, useState } from 'react';
 import { AirQualityMap } from '@/features/air-quality/components/AirQualityMap';
 import { StationDetailsPanel } from '@/features/air-quality/components/StationDetailsPanel';
-import { StationFilterBar } from '@/features/air-quality/components/StationFilterBar';
 import { StationSearch } from '@/features/air-quality/components/StationSearch';
 import { useStations } from '@/features/air-quality/hooks/useStations';
 import { useGlobalStations } from '@/features/air-quality/hooks/useGlobalStations';
 import type { MapBounds } from '@/features/air-quality/hooks/useGlobalStations';
 import type { Station } from '@/features/air-quality/model/station.types';
-import { filterByCountry } from '@/features/air-quality/utils/stationFilters';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { ErrorState } from '@/shared/components/ErrorState';
 import { Layout } from '@/shared/components/Layout';
@@ -53,11 +51,6 @@ function App() {
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
   const boundsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Tier-1: global country/region filter (null = worldwide, show all) ──
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  // ── Tier-2: voivodeship filter — only active when Poland is selected ──
-  const [selectedVoivodeship, setSelectedVoivodeship] = useState<string | null>(null);
-
   const { data: giosStations = [], isLoading, error } = useStations();
   const { data: globalStations = [], isError: isWaqiError } = useGlobalStations(mapBounds);
 
@@ -76,16 +69,7 @@ function App() {
     });
   }
 
-  // Apply tier-1: narrow to the selected country (null = show all worldwide stations).
-  const countryFilteredStations = filterByCountry(allStations, selectedCountry);
-
-  // Apply tier-2: narrow to a specific voivodeship (only relevant when Poland is selected).
-  const displayedStations =
-    selectedVoivodeship
-      ? countryFilteredStations.filter((s) => s.voivodeship === selectedVoivodeship)
-      : countryFilteredStations;
-
-  const selectedStation = displayedStations.find((station) => station.id === selectedStationId) ?? null;
+  const selectedStation = allStations.find((station) => station.id === selectedStationId) ?? null;
 
   function handleStationSelect(station: Station) {
     setSelectedStationId(station.id);
@@ -117,30 +101,12 @@ function App() {
 
   return (
     <Layout
-      header={<StationSearch stations={displayedStations} onStationSelect={handleStationSelect} />}
-      filterBar={
-        <StationFilterBar
-          stations={allStations}
-          selectedCountry={selectedCountry}
-          selectedVoivodeship={selectedVoivodeship}
-          onCountryChange={(country) => {
-            setSelectedCountry(country);
-            // Clear any selected station when the region changes
-            setSelectedStationId(null);
-            setSelectedSensorId(null);
-          }}
-          onVoivodeshipChange={(voivodeship) => {
-            setSelectedVoivodeship(voivodeship);
-            setSelectedStationId(null);
-            setSelectedSensorId(null);
-          }}
-        />
-      }
+      header={<StationSearch stations={allStations} onStationSelect={handleStationSelect} />}
     >
       <div className="relative flex-1">
         <ErrorBoundary fallback={<ErrorState message="Wystąpił błąd mapy. Odśwież stronę." />}>
           <AirQualityMap
-            stations={displayedStations}
+            stations={allStations}
             selectedStation={selectedStation}
             selectedStationId={selectedStationId}
             onStationSelect={handleMapStationSelect}
