@@ -4,8 +4,9 @@ import { usAqiToLevel } from './airQualityScale';
 import type { AqiLevel } from './airQualityScale';
 
 function parseAqiLevel(aqi: number | string): AqiLevel | null {
-  if (typeof aqi === 'number' && aqi >= 0) {
-    return usAqiToLevel(aqi);
+  const value = typeof aqi === 'string' ? parseInt(aqi, 10) : aqi;
+  if (typeof value === 'number' && !isNaN(value) && value >= 0) {
+    return usAqiToLevel(value);
   }
   return null;
 }
