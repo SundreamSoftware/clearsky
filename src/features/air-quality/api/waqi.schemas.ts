@@ -8,13 +8,8 @@ const WaqiBoundsStationSchema = z.object({
   lon: z.number(),
   station: z.object({
     name: z.string(),
-    time: z
-      .object({
-        stime: z.string().optional(),
-        tz: z.string().optional(),
-        vtime: z.number().optional(),
-      })
-      .optional(),
+    // WAQI returns `time` as a string timestamp in the bounds endpoint — z.unknown() accepts any shape.
+    time: z.unknown().optional(),
   }),
 });
 
