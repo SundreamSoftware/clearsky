@@ -11,6 +11,11 @@ function parseAqiLevel(aqi: number | string): AqiLevel | null {
   return null;
 }
 
+function parseRawAqi(aqi: number | string): number | null {
+  const value = typeof aqi === 'string' ? parseInt(aqi, 10) : aqi;
+  return typeof value === 'number' && !isNaN(value) && value >= 0 ? value : null;
+}
+
 export function mapWaqiBoundsStationToStation(dto: WaqiBoundsStationDto): Station {
   return {
     id: `waqi-${dto.uid}`,
@@ -23,6 +28,7 @@ export function mapWaqiBoundsStationToStation(dto: WaqiBoundsStationDto): Statio
     source: 'waqi',
     country: null,
     aqiLevel: parseAqiLevel(dto.aqi),
+    rawAqi: parseRawAqi(dto.aqi),
   };
 }
 

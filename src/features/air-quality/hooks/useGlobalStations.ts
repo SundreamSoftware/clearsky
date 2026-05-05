@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { waqiClient } from '../api/waqiClient';
 import type { WaqiBounds } from '../api/waqiClient';
 import { mapWaqiBoundsStationsToStations } from '../utils/waqiStationMapper';
@@ -14,5 +14,6 @@ export function useGlobalStations(bounds: MapBounds | null) {
     },
     enabled: bounds !== null,
     staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }

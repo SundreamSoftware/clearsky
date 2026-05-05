@@ -14,5 +14,7 @@ export interface Station {
   country: string | null;
   /** Pre-fetched AQI level for WAQI stations (from bounds response). Undefined for GIOŚ. */
   aqiLevel?: AqiLevel | null;
+  /** Raw numeric AQI value for WAQI stations (e.g. 45). Undefined for GIOŚ. */
+  rawAqi?: number | null;
   sensorIds?: { pm25?: number };
 }

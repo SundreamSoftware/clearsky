@@ -77,6 +77,19 @@ export function StationDetailsPanel({
   const aqiName = isGios
     ? (giosAqi?.indexName ?? (aqiLevel !== null ? getAqiInfo(aqiLevel).name : null))
     : getAqiInfo(aqiLevel).name;
+  // Raw numeric AQI: available for WAQI stations only. Prefer the live feed value over the
+  // pre-fetched bounds value as the feed is fetched fresh when the station is selected.
+  const rawAqi: number | null = isGios
+    ? null
+    : (() => {
+        const feedAqi = waqiDetail?.aqi;
+        if (typeof feedAqi === 'number' && feedAqi >= 0) return feedAqi;
+        if (typeof feedAqi === 'string') {
+          const n = parseInt(feedAqi, 10);
+          if (!isNaN(n) && n >= 0) return n;
+        }
+        return station?.rawAqi ?? null;
+      })();
   const aqiCalculatedAt = isGios
     ? (giosAqi?.calculatedAt ?? null)
     : (waqiDetail?.time?.s ?? null);
@@ -126,7 +139,7 @@ export function StationDetailsPanel({
           <div className="h-8 w-32 animate-pulse rounded bg-gray-200" />
         ) : (
           <div className="space-y-3">
-            <AirQualityBadge aqiLevel={aqiLevel} aqiName={aqiName} size="lg" />
+            <AirQualityBadge aqiLevel={aqiLevel} aqiName={aqiName} rawValue={rawAqi} size="lg" />
             <p className="text-sm text-gray-500">
               Calculated at:{' '}
               <span className="text-gray-700">
