@@ -9,7 +9,8 @@ import { useWaqiStationDetail } from '@/features/air-quality/hooks/useWaqiStatio
 import type { Sensor } from '@/features/air-quality/model/sensor.types';
 import type { Station } from '@/features/air-quality/model/station.types';
 import type { WaqiFeedDataDto } from '@/features/air-quality/api/waqi.dto';
-import { getAqiInfo } from '@/features/air-quality/utils/airQualityScale';
+import { getAqiInfo, pm25ToAqiLevel } from '@/features/air-quality/utils/airQualityScale';
+import type { AqiLevel } from '@/features/air-quality/utils/airQualityScale';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { WeatherPanel } from '@/features/weather/components/WeatherPanel';
 import { WeatherHistoryChart } from '@/features/weather/components/WeatherHistoryChart';
@@ -47,7 +48,7 @@ export function StationDetailsPanel({
   } = useStationSensors(isGios ? stationId : null);
 
   // WAQI-only hook (disabled for GIOŚ)
-  const { data: waqiDetail, isLoading: waqiLoading } = useWaqiStationDetail(
+  const { data: waqiDetail, isLoading: waqiLoading, isError: waqiFeedError } = useWaqiStationDetail(
     isWaqi ? station : null,
   );
 
@@ -60,9 +61,22 @@ export function StationDetailsPanel({
     SUPPORTED_POLLUTANTS.includes(sensor.parameterCode as (typeof SUPPORTED_POLLUTANTS)[number]),
   );
 
+  // Fallback AQI for GIOŚ stations: GIOŚ API only computes an official index for continuous
+  // monitoring stations. For stations where indexLevel is null, derive AQI from PM2.5 if available.
+  const pm25SensorId = supportedSensors.find((s) => s.parameterCode === 'PM2.5')?.id ?? null;
+  const { data: pm25Measurements = [] } = useSensorMeasurements(
+    isGios ? pm25SensorId : null,
+    'PM2.5',
+  );
+  const firstPm25 = pm25Measurements[0];
+  const fallbackAqiLevel: AqiLevel | null =
+    firstPm25 != null ? pm25ToAqiLevel(firstPm25.value) : null;
+
   // Unified AQI display values
-  const aqiLevel = isGios ? (giosAqi?.indexLevel ?? null) : (station?.aqiLevel ?? null);
-  const aqiName = isGios ? (giosAqi?.indexName ?? null) : getAqiInfo(aqiLevel).name;
+  const aqiLevel = isGios ? (giosAqi?.indexLevel ?? fallbackAqiLevel) : (station?.aqiLevel ?? null);
+  const aqiName = isGios
+    ? (giosAqi?.indexName ?? (aqiLevel !== null ? getAqiInfo(aqiLevel).name : null))
+    : getAqiInfo(aqiLevel).name;
   const aqiCalculatedAt = isGios
     ? (giosAqi?.calculatedAt ?? null)
     : (waqiDetail?.time?.s ?? null);
@@ -160,10 +174,14 @@ export function StationDetailsPanel({
                 <div key={index} className="h-16 animate-pulse rounded-xl bg-gray-100" />
               ))}
             </div>
+          ) : waqiFeedError ? (
+            <p className="text-sm text-gray-500">Nie udało się załadować szczegółów stacji.</p>
           ) : waqiDetail?.iaqi ? (
             <WaqiPollutantsSection iaqi={waqiDetail.iaqi} />
           ) : (
-            <p className="text-sm text-gray-500">Brak danych o zanieczyszczeniach.</p>
+            <p className="text-sm text-gray-500">
+              Ta stacja raportuje wyłącznie zbiorczy wskaźnik AQI — dane poszczególnych zanieczyszczeń są niedostępne.
+            </p>
           )
         )}
       </section>
@@ -270,7 +288,11 @@ function WaqiPollutantsSection({ iaqi }: { iaqi: WaqiIaqi }) {
   const available = WAQI_POLLUTANTS.filter((p) => iaqi[p.key] !== undefined);
 
   if (available.length === 0) {
-    return <p className="text-sm text-gray-500">Brak danych o zanieczyszczeniach.</p>;
+    return (
+      <p className="text-sm text-gray-500">
+        Ta stacja raportuje wyłącznie zbiorczy wskaźnik AQI — dane poszczególnych zanieczyszczeń są niedostępne.
+      </p>
+    );
   }
 
   return (
