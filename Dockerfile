@@ -14,7 +14,7 @@ FROM nginx:alpine AS runner
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.container.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
-# Generate /etc/nginx/openaq-apikey.conf at container start.
-# If OPENAQ_API_KEY is set, writes: proxy_set_header X-API-Key "<key>";
-# If not set, writes an empty comment so the include still succeeds.
-CMD ["/bin/sh", "-c", "if [ -n \"$OPENAQ_API_KEY\" ]; then printf 'proxy_set_header X-API-Key \"%s\";\\n' \"$OPENAQ_API_KEY\" > /etc/nginx/openaq-apikey.conf; else printf '# OPENAQ_API_KEY not configured\\n' > /etc/nginx/openaq-apikey.conf; fi && nginx -g 'daemon off;'"]
+# Generate /etc/nginx/waqi-token.conf at container start.
+# Sets $waqi_token nginx variable used in the /waqi-api/ proxy location.
+# If WAQI_TOKEN is not set, writes an empty string so the variable exists but is empty.
+CMD ["/bin/sh", "-c", "printf 'set $waqi_token \"%s\";\\n' \"${WAQI_TOKEN:-}\" > /etc/nginx/waqi-token.conf && nginx -g 'daemon off;'"]

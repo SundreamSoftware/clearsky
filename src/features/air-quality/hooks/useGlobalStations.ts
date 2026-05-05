@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { openAqClient } from '../api/openAqClient';
-import type { OpenAqBbox } from '../api/openAqClient';
-import { mapOpenAqLocationsToStations } from '../utils/openAqStationMapper';
+import { waqiClient } from '../api/waqiClient';
+import type { WaqiBounds } from '../api/waqiClient';
+import { mapWaqiBoundsStationsToStations } from '../utils/waqiStationMapper';
 
-export type MapBounds = OpenAqBbox;
+export type MapBounds = WaqiBounds;
 
 export function useGlobalStations(bounds: MapBounds | null) {
   return useQuery({
-    queryKey: ['stations', 'openaq', bounds],
+    queryKey: ['stations', 'waqi', bounds],
     queryFn: async () => {
-      const dtos = await openAqClient.getLocationsByBbox(bounds!);
-      return mapOpenAqLocationsToStations(dtos);
+      const dtos = await waqiClient.getLocationsByBounds(bounds!);
+      return mapWaqiBoundsStationsToStations(dtos);
     },
     enabled: bounds !== null,
     staleTime: 5 * 60 * 1000,

@@ -19,11 +19,21 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
-      '/openaq-api': {
-        target: 'https://api.openaq.org/v3',
+      '/waqi-api': {
+        target: 'https://api.waqi.info',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/openaq-api/, ''),
-        headers: env.VITE_OPENAQ_API_KEY ? { 'X-API-Key': env.VITE_OPENAQ_API_KEY } : {},
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Strip /waqi-api prefix and inject token as URL param
+            let newPath = proxyReq.path.replace(/^\/waqi-api/, '');
+            const token = env.VITE_WAQI_TOKEN;
+            if (token) {
+              const sep = newPath.includes('?') ? '&' : '?';
+              newPath = `${newPath}${sep}token=${token}`;
+            }
+            proxyReq.path = newPath;
+          });
+        },
       },
     },
   },

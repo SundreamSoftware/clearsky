@@ -8,7 +8,7 @@ services:
     ports:
       - "127.0.0.1:5010:80"
     environment:
-      - OPENAQ_API_KEY=${OPENAQ_API_KEY:-}
+      - WAQI_TOKEN=${WAQI_TOKEN:-}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s

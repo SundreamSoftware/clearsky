@@ -5,13 +5,17 @@ import { PollutantChart } from '@/features/air-quality/components/PollutantChart
 import { useAirQualityIndex } from '@/features/air-quality/hooks/useAirQualityIndex';
 import { useSensorMeasurements } from '@/features/air-quality/hooks/useSensorMeasurements';
 import { useStationSensors } from '@/features/air-quality/hooks/useStationSensors';
+import { useWaqiStationDetail } from '@/features/air-quality/hooks/useWaqiStationDetail';
 import type { Sensor } from '@/features/air-quality/model/sensor.types';
 import type { Station } from '@/features/air-quality/model/station.types';
+import type { WaqiFeedDataDto } from '@/features/air-quality/api/waqi.dto';
+import { getAqiInfo } from '@/features/air-quality/utils/airQualityScale';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { WeatherPanel } from '@/features/weather/components/WeatherPanel';
 import { WeatherHistoryChart } from '@/features/weather/components/WeatherHistoryChart';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { formatDateTime } from '@/shared/utils/dateTime';
+import { formatMeasurementValue } from '@/features/air-quality/utils/measurementFormatter';
 
 interface StationDetailsPanelProps {
   station: Station | null;
@@ -31,12 +35,22 @@ export function StationDetailsPanel({
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [chartRange, setChartRange] = useState<'24h' | '7d'>('24h');
   const stationId = station?.id ?? null;
-  const { data: aqi, isLoading: aqiLoading, error: aqiError } = useAirQualityIndex(stationId);
+  const isGios = station?.source === 'gios';
+  const isWaqi = station?.source === 'waqi';
+
+  // GIOŚ-only hooks (disabled for WAQI)
+  const { data: giosAqi, isLoading: aqiLoading } = useAirQualityIndex(isGios ? stationId : null);
   const {
     data: sensors = [],
     isLoading: sensorsLoading,
     error: sensorsError,
-  } = useStationSensors(stationId);
+  } = useStationSensors(isGios ? stationId : null);
+
+  // WAQI-only hook (disabled for GIOŚ)
+  const { data: waqiDetail, isLoading: waqiLoading } = useWaqiStationDetail(
+    isWaqi ? station : null,
+  );
+
   const {
     data: weather,
     isLoading: weatherLoading,
@@ -45,6 +59,14 @@ export function StationDetailsPanel({
   const supportedSensors = sensors.filter((sensor) =>
     SUPPORTED_POLLUTANTS.includes(sensor.parameterCode as (typeof SUPPORTED_POLLUTANTS)[number]),
   );
+
+  // Unified AQI display values
+  const aqiLevel = isGios ? (giosAqi?.indexLevel ?? null) : (station?.aqiLevel ?? null);
+  const aqiName = isGios ? (giosAqi?.indexName ?? null) : getAqiInfo(aqiLevel).name;
+  const aqiCalculatedAt = isGios
+    ? (giosAqi?.calculatedAt ?? null)
+    : (waqiDetail?.time?.s ?? null);
+  const isAqiLoading = isGios ? aqiLoading : waqiLoading;
 
   useEffect(() => {
     if (stationId !== null) {
@@ -86,17 +108,15 @@ export function StationDetailsPanel({
 
       <section className="border-b border-gray-100 px-5 py-4">
         <p className="mb-3 text-sm font-medium text-gray-500">Air Quality Index</p>
-        {aqiLoading ? (
+        {isAqiLoading ? (
           <div className="h-8 w-32 animate-pulse rounded bg-gray-200" />
-        ) : aqiError ? (
-          <p className="text-sm text-red-500">Błąd ładowania danych</p>
         ) : (
           <div className="space-y-3">
-            <AirQualityBadge aqiLevel={aqi?.indexLevel ?? null} aqiName={aqi?.indexName ?? null} size="lg" />
+            <AirQualityBadge aqiLevel={aqiLevel} aqiName={aqiName} size="lg" />
             <p className="text-sm text-gray-500">
               Calculated at:{' '}
               <span className="text-gray-700">
-                {aqi?.calculatedAt ? formatDateTime(aqi.calculatedAt) : 'Brak danych'}
+                {aqiCalculatedAt ? formatDateTime(aqiCalculatedAt) : 'Brak danych'}
               </span>
             </p>
           </div>
@@ -108,70 +128,88 @@ export function StationDetailsPanel({
           <p className="text-sm font-medium text-gray-500">Pollutant Measurements</p>
         </div>
 
-        {sensorsLoading ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="h-24 animate-pulse rounded-xl bg-gray-100" />
-            ))}
-          </div>
-        ) : sensorsError ? (
-          <p className="text-sm text-red-500">Błąd ładowania sensorów</p>
-        ) : supportedSensors.length === 0 ? (
-          <p className="text-sm text-gray-500">Brak obsługiwanych sensorów.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {supportedSensors.map((sensor) => (
-              <PollutantCardWithData
-                key={sensor.id}
-                sensor={sensor}
-                isSelected={sensor.id === selectedSensorId}
-                onSelect={() => onSensorSelect(sensor.id)}
-              />
-            ))}
-          </div>
+        {isGios && (
+          sensorsLoading ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="h-24 animate-pulse rounded-xl bg-gray-100" />
+              ))}
+            </div>
+          ) : sensorsError ? (
+            <p className="text-sm text-gray-500">Brak danych czujnikowych.</p>
+          ) : supportedSensors.length === 0 ? (
+            <p className="text-sm text-gray-500">Brak obsługiwanych sensorów.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              {supportedSensors.map((sensor) => (
+                <PollutantCardWithData
+                  key={sensor.id}
+                  sensor={sensor}
+                  isSelected={sensor.id === selectedSensorId}
+                  onSelect={() => onSensorSelect(sensor.id)}
+                />
+              ))}
+            </div>
+          )
+        )}
+
+        {isWaqi && (
+          waqiLoading ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-16 animate-pulse rounded-xl bg-gray-100" />
+              ))}
+            </div>
+          ) : waqiDetail?.iaqi ? (
+            <WaqiPollutantsSection iaqi={waqiDetail.iaqi} />
+          ) : (
+            <p className="text-sm text-gray-500">Brak danych o zanieczyszczeniach.</p>
+          )
         )}
       </section>
 
-      <div className="px-4 pb-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Wykres pomiarów
-          </h3>
-          <div className="flex gap-1">
-            {(['24h', '7d'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setChartRange(r)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  chartRange === r
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
+      {isGios && (
+        <div className="px-4 pb-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Wykres pomiarów
+            </h3>
+            <div className="flex gap-1">
+              {(['24h', '7d'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setChartRange(r)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    chartRange === r
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
+          {selectedSensorId !== null ? (
+            (() => {
+              const sensor = supportedSensors.find((item) => item.id === selectedSensorId);
+              return sensor ? (
+                <PollutantChart
+                  sensorId={selectedSensorId}
+                  parameterCode={sensor.parameterCode}
+                  parameterName={sensor.parameterName}
+                  unit={sensor.unit}
+                />
+              ) : null;
+            })()
+          ) : (
+            <p className="py-4 text-center text-sm text-gray-400">
+              Kliknij kartę czujnika, aby zobaczyć wykres.
+            </p>
+          )}
         </div>
-        {selectedSensorId !== null ? (
-          (() => {
-            const sensor = supportedSensors.find((item) => item.id === selectedSensorId);
-            return sensor ? (
-              <PollutantChart
-                sensorId={selectedSensorId}
-                parameterCode={sensor.parameterCode}
-                parameterName={sensor.parameterName}
-                unit={sensor.unit}
-              />
-            ) : null;
-          })()
-        ) : (
-          <p className="py-4 text-center text-sm text-gray-400">
-            Kliknij kartę czujnika, aby zobaczyć wykres.
-          </p>
-        )}
-      </div>
+      )}
 
       {(weatherLoading || weather) && (
         <section className="border-t border-gray-100 px-5 py-4">
@@ -214,6 +252,54 @@ function PollutantCardWithData({
       isSelected={isSelected}
       onSelect={onSelect}
     />
+  );
+}
+
+type WaqiIaqi = NonNullable<WaqiFeedDataDto['iaqi']>;
+
+const WAQI_POLLUTANTS: { key: keyof WaqiIaqi; name: string; code: string; unit: string }[] = [
+  { key: 'pm25', name: 'Particulate matter < 2.5 µm', code: 'PM2.5', unit: 'µg/m³' },
+  { key: 'pm10', name: 'Particulate matter < 10 µm', code: 'PM10', unit: 'µg/m³' },
+  { key: 'no2', name: 'Nitrogen dioxide', code: 'NO2', unit: 'ppb' },
+  { key: 'o3', name: 'Ozone', code: 'O3', unit: 'ppb' },
+  { key: 'so2', name: 'Sulfur dioxide', code: 'SO2', unit: 'ppb' },
+  { key: 'co', name: 'Carbon monoxide', code: 'CO', unit: 'ppm' },
+];
+
+function WaqiPollutantsSection({ iaqi }: { iaqi: WaqiIaqi }) {
+  const available = WAQI_POLLUTANTS.filter((p) => iaqi[p.key] !== undefined);
+
+  if (available.length === 0) {
+    return <p className="text-sm text-gray-500">Brak danych o zanieczyszczeniach.</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1" data-testid="pollutant-card">
+      {available.map((p) => {
+        const entry = iaqi[p.key];
+        const value = entry?.v ?? null;
+        return (
+          <div
+            key={p.key}
+            className="flex w-full overflow-hidden rounded-xl border border-gray-200 bg-white"
+          >
+            <div className="h-full w-1 shrink-0 self-stretch bg-gray-300" />
+            <div className="flex-1 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{p.name}</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">{p.code}</p>
+                </div>
+                <p className="text-lg font-semibold text-gray-900">
+                  {value !== null ? formatMeasurementValue(value, p.unit) : '–'}
+                </p>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">Jednostka: {p.unit}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

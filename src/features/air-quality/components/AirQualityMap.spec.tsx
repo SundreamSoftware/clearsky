@@ -8,10 +8,6 @@ vi.mock('@/features/air-quality/hooks/useAirQualityIndex', () => ({
   useAirQualityIndex: () => ({ data: null, isLoading: false, error: null }),
 }));
 
-vi.mock('@/features/air-quality/hooks/useOpenAqAqi', () => ({
-  useOpenAqAqi: () => ({ data: null, isLoading: false, error: null }),
-}));
-
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children: ReactNode }) => <div data-testid="map">{children}</div>,
   TileLayer: () => null,

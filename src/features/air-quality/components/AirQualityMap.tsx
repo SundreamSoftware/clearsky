@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import type { Station } from '@/features/air-quality/model/station.types';
 import type { MapBounds } from '@/features/air-quality/hooks/useGlobalStations';
 import { useAirQualityIndex } from '@/features/air-quality/hooks/useAirQualityIndex';
-import { useOpenAqAqi } from '@/features/air-quality/hooks/useOpenAqAqi';
 import { ErrorState } from '@/shared/components/ErrorState';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { StationMarker } from './StationMarker';
@@ -85,7 +84,7 @@ function GiosStationMarker({
   );
 }
 
-function OpenAqStationMarker({
+function WaqiStationMarker({
   station,
   isSelected,
   onSelect,
@@ -94,11 +93,10 @@ function OpenAqStationMarker({
   isSelected: boolean;
   onSelect: (id: string) => void;
 }) {
-  const { data: aqi } = useOpenAqAqi(station);
   return (
     <StationMarker
       station={station}
-      aqiLevel={aqi?.indexLevel ?? null}
+      aqiLevel={station.aqiLevel ?? null}
       isSelected={isSelected}
       onSelect={onSelect}
     />
@@ -147,8 +145,8 @@ export function AirQualityMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {stations.map((station) =>
-          station.source === 'openaq' ? (
-            <OpenAqStationMarker
+          station.source === 'waqi' ? (
+            <WaqiStationMarker
               key={station.id}
               station={station}
               isSelected={station.id === selectedStationId}
