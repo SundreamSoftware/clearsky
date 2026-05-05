@@ -105,13 +105,26 @@ Both use the same component. Layout switching is done entirely with Tailwind res
 
 ### Map internals
 
-`AirQualityMap` contains a private `MapController` component that calls `useMap()` — this hook only works inside `<MapContainer>`. `MapController` must never be moved outside `AirQualityMap.tsx`. Station markers use `<CircleMarker>` (SVG path), not default Leaflet icons, to avoid Vite bundler icon path issues. AQI colour is applied via `pathOptions.fillColor`.
+`AirQualityMap.tsx` contains three private components that must stay inside that file:
 
-### `StationDetailsPanel` inner component
+- **`MapController`** — calls `useMap()` (only valid inside `<MapContainer>`); fires initial bounds on mount and listens to `moveend`; flies the map to a selected station.
+- **`GiosStationMarker`** — calls `useAirQualityIndex(station.id)` to resolve AQI at render time.
+- **`WaqiStationMarker`** — reads `station.aqiLevel` directly (pre-fetched from the bounds response, no extra call).
 
-`PollutantCardWithData` is a non-exported inner component defined at the bottom of `StationDetailsPanel.tsx`. It owns the per-sensor data fetch (`useSensorMeasurements`) so each pollutant card fetches independently. Do not lift this into a separate file.
+Both marker wrappers delegate to the shared `StationMarker` (presentational). Station markers use `<CircleMarker>` (SVG path), not default Leaflet icons, to avoid Vite bundler icon path issues. AQI colour is applied via `pathOptions.fillColor`.
+
+### `StationDetailsPanel` inner components
+
+`StationDetailsPanel.tsx` defines two non-exported inner components:
+
+- **`PollutantCardWithData`** — owns the per-sensor data fetch (`useSensorMeasurements`). Rendered for each GIOŚ sensor. Do not lift into a separate file.
+- **`WaqiPollutantsSection`** — renders WAQI pollutant data from `waqiDetail.iaqi` (individual AQI values). Only rendered for `source === 'waqi'` stations.
 
 ## Key conventions
+
+### `@` path alias
+
+`@` resolves to `src/` (configured in `vite.config.ts` and `tsconfig.json`). All intra-project imports use `@/` — never relative paths crossing feature boundaries.
 
 ### Dynamic colours use inline `style`, not Tailwind classes
 
@@ -143,6 +156,12 @@ All hooks that take a nullable ID use this pattern. Do not skip the guard.
 ### AQI levels
 
 `AqiLevel` is `0 | 1 | 2 | 3 | 4 | 5`. `getAqiInfo(null)` returns `UNKNOWN_AQI` (grey). AQI is **not** fetched on map load for GIOŚ stations — only when a station is selected. WAQI stations carry their AQI from the bounds query.
+
+`airQualityScale.ts` also exports `pm25ToAqiLevel(pm25)` and `usAqiToLevel(aqi)` converters for mapping raw sensor readings to `AqiLevel`. Use these rather than inline thresholds.
+
+### GIOŚ API Polish key names
+
+GIOŚ API responses use Polish property names (e.g. `'Lista stacji pomiarowych'`, `'Lista stanowisk pomiarowych dla podanej stacji'`). These are handled entirely by Zod schemas in `gios.schemas.ts`. Do not access GIOŚ response objects directly — always go through `giosClient` → schema parse → mapper.
 
 ### `onMouseDown` in `StationList`
 
