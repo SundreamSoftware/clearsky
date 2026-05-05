@@ -20,12 +20,12 @@ export function StationMarker({
   return (
     <CircleMarker
       center={[station.latitude, station.longitude]}
-      radius={isSelected ? 11 : 8}
+      radius={isSelected ? 7 : 4}
       pathOptions={{
         fillColor: colour,
-        fillOpacity: 0.85,
+        fillOpacity: 0.9,
         color: isSelected ? '#fff' : colour,
-        weight: isSelected ? 3 : 1,
+        weight: isSelected ? 2 : 0,
       }}
       eventHandlers={{
         click: () => onSelect(station.id),
