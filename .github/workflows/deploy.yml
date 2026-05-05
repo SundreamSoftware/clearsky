@@ -57,32 +57,22 @@ jobs:
           script: |
             mkdir -p /opt/clearsky
 
-            # Write docker-compose.yml — ensures server always has the latest version
-            cat > /opt/clearsky/docker-compose.yml << 'YAMLEOF'
-            services:
-              clearsky-web:
-                image: ghcr.io/sundreamsoftware/clearsky:latest
-                container_name: clearsky-web
-                restart: unless-stopped
-                ports:
-                  - "127.0.0.1:5010:80"
-                volumes:
-                  - ./waqi-token.conf:/etc/nginx/waqi-token.conf:ro
-                healthcheck:
-                  test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 10s
-            YAMLEOF
-
-            # Write WAQI token config directly — bypasses the env-var chain entirely
+            # Write WAQI token nginx config directly — token expanded by GitHub Actions before SSH
             printf 'set $waqi_token "%s";\n' '${{ secrets.WAQI_TOKEN }}' > /opt/clearsky/waqi-token.conf
 
-            cd /opt/clearsky
+            # Pull latest image
             docker login ghcr.io -u ${{ github.actor }} --password '${{ secrets.GITHUB_TOKEN }}'
-            docker compose pull
-            docker compose up -d --force-recreate --remove-orphans
+            docker pull ghcr.io/sundreamsoftware/clearsky:latest
+
+            # Recreate container with volume-mounted token config
+            docker stop clearsky-web 2>/dev/null || true
+            docker rm clearsky-web 2>/dev/null || true
+            docker run -d \
+              --name clearsky-web \
+              --restart unless-stopped \
+              -p 127.0.0.1:5010:80 \
+              -v /opt/clearsky/waqi-token.conf:/etc/nginx/waqi-token.conf:ro \
+              ghcr.io/sundreamsoftware/clearsky:latest
             docker image prune -f
 
             echo "Waiting for container to be ready..."
@@ -93,13 +83,13 @@ jobs:
               fi
               if [ "$i" -eq 6 ]; then
                 echo "Health check failed after 30s"
-                docker compose ps
-                docker compose logs --tail=50
+                docker ps
+                docker logs clearsky-web --tail=50
                 exit 1
               fi
               echo "Attempt $i failed, retrying in 5s..."
               sleep 5
             done
 
-            docker compose ps
+            docker ps
             echo "Deployment complete"
