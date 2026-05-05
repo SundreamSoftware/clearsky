@@ -47,11 +47,17 @@ src/
   app/            # App bootstrap, providers, router
   features/
     air-quality/
-      api/        # GIOŚ API client, Zod schemas, DTOs
+      api/        # GIOŚ + WAQI API clients, Zod schemas, DTOs
       components/ # UI components
       hooks/      # TanStack Query hooks
       model/      # Domain types
-      utils/      # Mappers, formatters, scales
+      utils/      # Mappers, formatters, scales, filters
+    weather/
+      api/        # Open-Meteo client, Zod schemas, DTOs
+      components/ # Weather UI components
+      hooks/      # TanStack Query hooks
+      model/      # Domain types
+      utils/      # Mappers
   shared/
     api/          # HTTP client, error types
     components/   # Shared UI (Layout, Loading, Error states)
@@ -82,19 +88,17 @@ Open [http://localhost:5173](http://localhost:5173)
 
 | Variable | Default | Description |
 |---|---|---|
-| `VITE_GIOS_API_BASE_URL` | `https://api.gios.gov.pl/pjp-api/rest` | GIOŚ API base URL |
-| `VITE_OPENAQ_API_KEY` | _(empty)_ | OpenAQ v3 API key for global stations |
+| `VITE_GIOS_API_BASE_URL` | `/api` | GIOŚ API base URL (proxied — do not change) |
+| `VITE_WAQI_TOKEN` | _(empty)_ | WAQI token for local dev proxy — get a free token at [aqicn.org/data-platform/token](https://aqicn.org/data-platform/token/) |
 
-Copy `.env.example` to `.env.local` and adjust as needed.
-
-> **Note:** Deploying without an OpenAQ API key will show only Polish (GIOŚ) stations. Global stations require a free key from [explore.openaq.org](https://explore.openaq.org/register).
+Copy `.env.example` to `.env.local` and set `VITE_WAQI_TOKEN`. The token is injected server-side and never exposed to the browser.
 
 ## Data Sources
 
 | Source | Coverage | API |
 |---|---|---|
-| [GIOŚ](https://www.gios.gov.pl/) | Poland air quality | [api.gios.gov.pl](https://api.gios.gov.pl/pjp-api/swagger-ui/index.html) |
-| [OpenAQ](https://openaq.org/) | Global air quality | [api.openaq.org/v3](https://docs.openaq.org/) |
+| [GIOŚ](https://www.gios.gov.pl/) | Poland air quality (~700 official stations) | [api.gios.gov.pl](https://api.gios.gov.pl/pjp-api/swagger-ui/index.html) |
+| [WAQI](https://waqi.info/) | Global air quality (11,000+ stations, viewport-based) | [api.waqi.info](https://aqicn.org/api/) |
 | [Open-Meteo](https://open-meteo.com/) | Global weather | [api.open-meteo.com](https://open-meteo.com/en/docs) |
 
 ## Running Tests
@@ -138,7 +142,7 @@ GitHub Actions deploys automatically on push to `main`. Required secrets:
 | `SERVER_HOST` | Server IP or hostname |
 | `SERVER_USER` | SSH username |
 | `SSH_PRIVATE_KEY` | Private key for SSH access |
-| `OPENAQ_API_KEY` | OpenAQ API key (optional — enables global stations) |
+| `WAQI_TOKEN` | WAQI API token — injected into the container at runtime |
 
 ### Health Check
 
@@ -149,16 +153,6 @@ curl http://127.0.0.1:5010/health
 # Public endpoint (after SSL setup)
 curl https://clearsky.sundreamsoftware.pl/health
 ```
-
-## Deployment Notes
-
-- `VITE_GIOS_API_BASE_URL` is a Vite build-time variable and is baked into the production bundle.
-- The `docker-compose.yml` environment entry documents the expected value for builds, but changing it at container runtime does not reconfigure an already built frontend bundle.
-- Host Nginx terminates TLS and proxies traffic to the Docker container on `127.0.0.1:5010`.
-
-## Data Source
-
-[GIOŚ API](https://powietrze.gios.gov.pl/pjp/content/api) — Chief Inspectorate for Environmental Protection (Poland). Public, no authentication required.
 
 ## Project Structure
 
