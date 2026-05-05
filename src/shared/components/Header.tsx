@@ -35,6 +35,9 @@ export function Header({ children }: HeaderProps) {
         <span className="hidden text-xs font-medium text-[var(--text-muted)] sm:inline">
           Air Quality Monitor
         </span>
+        <span className="hidden text-xs text-[var(--text-muted)] lg:inline">
+          &mdash; &copy; {new Date().getFullYear()} SundreamSoftware
+        </span>
       </div>
 
       {children && <div className="ml-auto flex-1 max-w-sm">{children}</div>}
