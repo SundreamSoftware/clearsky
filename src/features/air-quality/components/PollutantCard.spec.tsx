@@ -74,7 +74,7 @@ describe('PollutantCard', () => {
       />,
     );
 
-    expect(screen.getByTestId('pollutant-card')).toHaveClass('ring-2', 'ring-blue-500');
+    expect(screen.getByTestId('pollutant-card')).toHaveClass('border-[var(--accent)]');
   });
 
   it('calls onSelect when clicked', () => {

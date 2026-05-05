@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import type { Map as LeafletMap } from 'leaflet';
 import type { Station } from '@/features/air-quality/model/station.types';
 import type { MapBounds } from '@/features/air-quality/hooks/useGlobalStations';
 import { useAirQualityIndex } from '@/features/air-quality/hooks/useAirQualityIndex';
@@ -7,6 +8,20 @@ import { AQI_SCALE, UNKNOWN_AQI } from '@/features/air-quality/utils/airQualityS
 import { ErrorState } from '@/shared/components/ErrorState';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { StationMarker } from './StationMarker';
+
+function useIsDark() {
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains('dark'),
+  );
+  useEffect(() => {
+    const obs = new MutationObserver(() =>
+      setIsDark(document.documentElement.classList.contains('dark')),
+    );
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
+}
 
 interface AirQualityMapProps {
   stations: Station[];
@@ -111,21 +126,31 @@ function WaqiStationMarker({
 const EUROPE_CENTER: [number, number] = [50.0, 10.0];
 const DEFAULT_ZOOM = 4;
 
+const CARTO_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+/** Captures the Leaflet map instance into a ref so controls outside MapContainer can use it. */
+function MapInstanceCapture({ mapRef }: { mapRef: React.MutableRefObject<LeafletMap | null> }) {
+  const map = useMap();
+  useEffect(() => { mapRef.current = map; }, [map]);
+  return null;
+}
+
 function MapLegend() {
   return (
-    <div className="absolute bottom-8 left-2 z-[1000] rounded-lg bg-white/90 px-3 py-2 shadow-md text-xs backdrop-blur-sm">
-      <p className="mb-1.5 font-semibold text-gray-700">Jakość powietrza</p>
+    <div className="absolute bottom-8 left-2 z-[1000] rounded-xl border border-[var(--border)] bg-[var(--bg)]/95 px-3 py-2.5 shadow-lg text-xs backdrop-blur-sm transition-colors">
+      <p className="mb-2 font-semibold text-[var(--text)]">Jakość powietrza</p>
       {(Object.entries(AQI_SCALE) as [string, { name: string; colour: string }][]).map(
         ([level, { name, colour }]) => (
           <div key={level} className="flex items-center gap-2 py-0.5">
             <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: colour }} />
-            <span className="text-gray-600">{name}</span>
+            <span className="text-[var(--text-muted)]">{name}</span>
           </div>
         ),
       )}
       <div className="flex items-center gap-2 py-0.5">
         <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: UNKNOWN_AQI.colour }} />
-        <span className="text-gray-600">{UNKNOWN_AQI.name}</span>
+        <span className="text-[var(--text-muted)]">{UNKNOWN_AQI.name}</span>
       </div>
     </div>
   );
@@ -141,13 +166,35 @@ export function AirQualityMap({
   error,
   waqiError,
 }: AirQualityMapProps) {
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const isDark = useIsDark();
+  const [locating, setLocating] = useState(false);
+
+  function handleLocate() {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        mapInstanceRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 13, {
+          duration: 1,
+        });
+        setLocating(false);
+      },
+      () => setLocating(false),
+    );
+  }
+
   if (error) {
     return (
-      <div className="flex h-full w-full items-center justify-center rounded-lg bg-gray-50">
+      <div className="flex h-full w-full items-center justify-center rounded-lg bg-[var(--bg-secondary)]">
         <ErrorState message="Nie udało się załadować stacji pomiarowych." />
       </div>
     );
   }
+
+  const tileUrl = isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
   return (
     <div
@@ -155,12 +202,12 @@ export function AirQualityMap({
       data-testid="map-container"
     >
       {isLoading && (
-        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/60">
+        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/60 dark:bg-black/60">
           <LoadingState message="Ładowanie stacji..." />
         </div>
       )}
       {waqiError && (
-        <div className="absolute left-1/2 top-2 z-[1000] -translate-x-1/2 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-800 shadow-md ring-1 ring-amber-200">
+        <div className="absolute left-1/2 top-2 z-[1000] -translate-x-1/2 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-800 shadow-md ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800">
           Global stations could not be loaded — check WAQI token configuration.
         </div>
       )}
@@ -170,10 +217,13 @@ export function AirQualityMap({
         className="h-full w-full"
         data-testid="map"
       >
+        <MapInstanceCapture mapRef={mapInstanceRef} />
         <MapController selectedStation={selectedStation} onBoundsChange={onBoundsChange} />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          key={tileUrl}
+          attribution={CARTO_ATTRIBUTION}
+          url={tileUrl}
+          subdomains={['a', 'b', 'c', 'd']}
         />
         {stations.map((station) =>
           station.source === 'waqi' ? (
@@ -193,6 +243,30 @@ export function AirQualityMap({
           ),
         )}
       </MapContainer>
+
+      {/* Locate-me button */}
+      <button
+        type="button"
+        onClick={handleLocate}
+        disabled={locating}
+        aria-label="Przejdź do mojej lokalizacji"
+        title="Przejdź do mojej lokalizacji"
+        className="absolute bottom-8 right-2 z-[1000] flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg)]/95 text-[var(--text-muted)] shadow-lg backdrop-blur-sm transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
+      >
+        {locating ? (
+          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+        ) : (
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" />
+            <path strokeLinecap="round" d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            <path strokeLinecap="round" d="M12 9V2M12 22v-3M2 12h3M22 12h-3" opacity="0" />
+          </svg>
+        )}
+      </button>
+
       <MapLegend />
     </div>
   );

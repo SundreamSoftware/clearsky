@@ -106,18 +106,18 @@ export function StationDetailsPanel({
   }
 
   return (
-    <aside className="flex min-h-full flex-col" data-testid="station-details-panel">
-      <div className="border-b border-gray-100 px-5 pb-5 pt-3">
-        <div className="mb-3 flex items-start justify-between gap-4">
+    <aside className="flex min-h-full flex-col bg-[var(--bg)] transition-colors" data-testid="station-details-panel">
+      <div className="border-b border-[var(--border)] px-5 pb-4 pt-3">
+        <div className="mb-2 flex items-start justify-between gap-4">
           <div>
             <h2
               ref={headingRef}
               tabIndex={-1}
-              className="text-lg font-semibold text-gray-900 focus:outline-none"
+              className="text-base font-semibold text-[var(--text)] focus:outline-none"
             >
               {station.name}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="mt-0.5 text-sm text-[var(--text-muted)]">
               {station.city}
               {station.address ? `, ${station.address}` : ''}
             </p>
@@ -126,46 +126,46 @@ export function StationDetailsPanel({
             type="button"
             onClick={onClose}
             aria-label="Zamknij szczegóły stacji"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-xl text-gray-500 transition hover:bg-gray-50 hover:text-gray-700"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border)] text-lg text-[var(--text-muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
             ×
           </button>
         </div>
       </div>
 
-      <section className="border-b border-gray-100 px-5 py-4">
-        <p className="mb-3 text-sm font-medium text-gray-500">Air Quality Index</p>
+      <section className="border-b border-[var(--border)] px-5 py-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Indeks jakości powietrza</p>
         {isAqiLoading ? (
-          <div className="h-8 w-32 animate-pulse rounded bg-gray-200" />
+          <div className="h-14 w-36 animate-pulse rounded-xl bg-[var(--bg-secondary)]" />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <AirQualityBadge aqiLevel={aqiLevel} aqiName={aqiName} rawValue={rawAqi} size="lg" />
-            <p className="text-sm text-gray-500">
-              Calculated at:{' '}
-              <span className="text-gray-700">
-                {aqiCalculatedAt ? formatDateTime(aqiCalculatedAt) : 'Brak danych'}
+            <p className="text-xs text-[var(--text-muted)]">
+              Zaktualizowano:{' '}
+              <span className="text-[var(--text)]">
+                {aqiCalculatedAt ? formatDateTime(aqiCalculatedAt) : '—'}
               </span>
             </p>
           </div>
         )}
       </section>
 
-      <section className="border-b border-gray-100 px-5 py-4">
-        <div className="mb-4">
-          <p className="text-sm font-medium text-gray-500">Pollutant Measurements</p>
+      <section className="border-b border-[var(--border)] px-5 py-4">
+        <div className="mb-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Zanieczyszczenia</p>
         </div>
 
         {isGios && (
           sensorsLoading ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="h-24 animate-pulse rounded-xl bg-gray-100" />
+                <div key={index} className="h-24 animate-pulse rounded-xl bg-[var(--bg-secondary)]" />
               ))}
             </div>
           ) : sensorsError ? (
-            <p className="text-sm text-gray-500">Brak danych czujnikowych.</p>
+            <p className="text-sm text-[var(--text-muted)]">Brak danych czujnikowych.</p>
           ) : supportedSensors.length === 0 ? (
-            <p className="text-sm text-gray-500">Brak obsługiwanych sensorów.</p>
+            <p className="text-sm text-[var(--text-muted)]">Brak obsługiwanych sensorów.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {supportedSensors.map((sensor) => (
@@ -184,15 +184,15 @@ export function StationDetailsPanel({
           waqiLoading ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-16 animate-pulse rounded-xl bg-gray-100" />
+                <div key={index} className="h-16 animate-pulse rounded-xl bg-[var(--bg-secondary)]" />
               ))}
             </div>
           ) : waqiFeedError ? (
-            <p className="text-sm text-gray-500">Nie udało się załadować szczegółów stacji.</p>
+            <p className="text-sm text-[var(--text-muted)]">Nie udało się załadować szczegółów stacji.</p>
           ) : waqiDetail?.iaqi ? (
             <WaqiPollutantsSection iaqi={waqiDetail.iaqi} />
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[var(--text-muted)]">
               Ta stacja raportuje wyłącznie zbiorczy wskaźnik AQI — dane poszczególnych zanieczyszczeń są niedostępne.
             </p>
           )
@@ -202,7 +202,7 @@ export function StationDetailsPanel({
       {isGios && (
         <div className="px-4 pb-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               Wykres pomiarów
             </h3>
             <div className="flex gap-1">
@@ -213,9 +213,10 @@ export function StationDetailsPanel({
                   onClick={() => setChartRange(r)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                     chartRange === r
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'text-white'
+                      : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:bg-[var(--border)]'
                   }`}
+                  style={chartRange === r ? { backgroundColor: 'var(--accent)' } : {}}
                 >
                   {r}
                 </button>
@@ -235,7 +236,7 @@ export function StationDetailsPanel({
               ) : null;
             })()
           ) : (
-            <p className="py-4 text-center text-sm text-gray-400">
+            <p className="py-4 text-center text-sm text-[var(--text-muted)]">
               Kliknij kartę czujnika, aby zobaczyć wykres.
             </p>
           )}
@@ -243,8 +244,8 @@ export function StationDetailsPanel({
       )}
 
       {(weatherLoading || weather) && (
-        <section className="border-t border-gray-100 px-5 py-4">
-          <h3 className="mb-3 text-sm font-medium text-gray-500">Warunki pogodowe</h3>
+        <section className="border-t border-[var(--border)] px-5 py-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Warunki pogodowe</h3>
           {weatherLoading ? (
             <LoadingState message="Ładowanie pogody..." />
           ) : weather ? (
@@ -254,8 +255,8 @@ export function StationDetailsPanel({
       )}
 
       {station && (
-        <section className="border-t border-gray-100 px-5 py-4">
-          <h3 className="mb-3 text-sm font-medium text-gray-500">Historia pogody</h3>
+        <section className="border-t border-[var(--border)] px-5 py-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Historia pogody</h3>
           <WeatherHistoryChart lat={station.latitude} lon={station.longitude} range={chartRange} />
         </section>
       )}
@@ -316,20 +317,20 @@ function WaqiPollutantsSection({ iaqi }: { iaqi: WaqiIaqi }) {
         return (
           <div
             key={p.key}
-            className="flex w-full overflow-hidden rounded-xl border border-gray-200 bg-white"
+            className="flex w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)]"
           >
-            <div className="h-full w-1 shrink-0 self-stretch bg-gray-300" />
-            <div className="flex-1 p-4">
+            <div className="h-full w-1 shrink-0 self-stretch bg-[var(--border)]" />
+            <div className="flex-1 p-3.5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{p.name}</p>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">{p.code}</p>
+                  <p className="text-sm font-semibold text-[var(--text)]">{p.name}</p>
+                  <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{p.code}</p>
                 </div>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-bold text-[var(--text)]">
                   {value !== null ? formatMeasurementValue(value, p.unit) : '–'}
                 </p>
               </div>
-              <p className="mt-2 text-xs text-gray-500">Jednostka: {p.unit}</p>
+              <p className="mt-1.5 text-xs text-[var(--text-muted)]">{p.unit}</p>
             </div>
           </div>
         );

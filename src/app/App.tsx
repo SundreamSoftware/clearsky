@@ -45,10 +45,14 @@ function clampMapBounds(bounds: MapBounds): MapBounds {
   };
 }
 
+// Pre-compute the Europe view bounding box so WAQI starts loading immediately on mount,
+// in parallel with the GIOŚ fetch, instead of waiting for the map to render and fire bounds.
+const INITIAL_BOUNDS: MapBounds = { minLat: 25, maxLat: 72, minLon: -25, maxLon: 50 };
+
 function App() {
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [selectedSensorId, setSelectedSensorId] = useState<number | null>(null);
-  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  const [mapBounds, setMapBounds] = useState<MapBounds>(INITIAL_BOUNDS);
   const boundsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: giosStations = [], isLoading, error } = useStations();
@@ -119,8 +123,8 @@ function App() {
       </div>
 
       {selectedStation && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 h-2/3 overflow-y-auto rounded-t-2xl bg-white shadow-2xl lg:static lg:z-30 lg:flex lg:h-full lg:w-96 lg:shrink-0 lg:flex-col lg:overflow-y-auto lg:rounded-none lg:border-l lg:border-gray-200 lg:bg-white lg:shadow-lg">
-          <div className="mx-auto mb-1 mt-3 h-1 w-8 rounded-full bg-gray-300 lg:hidden" />
+        <div className="fixed bottom-0 left-0 right-0 z-40 h-2/3 overflow-y-auto rounded-t-2xl bg-[var(--bg)] shadow-2xl lg:static lg:z-30 lg:flex lg:h-full lg:w-96 lg:shrink-0 lg:flex-col lg:overflow-y-auto lg:rounded-none lg:border-l lg:border-[var(--border)] lg:bg-[var(--bg)] lg:shadow-lg">
+          <div className="mx-auto mb-1 mt-3 h-1 w-10 rounded-full bg-[var(--border)] lg:hidden" />
           <ErrorBoundary fallback={<ErrorState message="Nie można załadować szczegółów stacji." />}>
             <StationDetailsPanel
               station={selectedStation}

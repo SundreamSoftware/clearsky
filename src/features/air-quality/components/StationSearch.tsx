@@ -81,7 +81,7 @@ export function StationSearch({ stations, onStationSelect }: StationSearchProps)
     <div ref={containerRef} className="relative w-full max-w-md" data-testid="station-search">
       <div className="relative">
         <svg
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none absolute"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -111,14 +111,14 @@ export function StationSearch({ stations, onStationSelect }: StationSearchProps)
           }}
           onKeyDown={handleKeyDown}
           placeholder="Szukaj stacji lub miasta..."
-          className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] py-2 pl-9 pr-4 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
           data-testid="search-input"
         />
       </div>
 
       {isOpen && hasDebouncedQuery && (
         <div
-          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--bg)] shadow-xl"
           data-testid="search-dropdown"
         >
           <StationList

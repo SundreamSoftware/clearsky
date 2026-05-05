@@ -10,7 +10,7 @@ interface LayoutProps {
 
 export function Layout({ children, header, filterBar }: LayoutProps) {
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
+    <div className="flex h-screen flex-col bg-[var(--bg-secondary)] transition-colors">
       <Header>{header}</Header>
       {filterBar}
       <main className="relative flex flex-1 overflow-hidden">{children}</main>
