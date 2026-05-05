@@ -22,26 +22,78 @@ npx playwright test tests/e2e/search.spec.ts  # single E2E file
 
 ## Architecture
 
+### Data sources
+
+| Source | Coverage | Proxy path |
+|---|---|---|
+| GIOŚ | Poland air quality (official, ~700 stations) | `/api/*` → `api.gios.gov.pl/pjp-api/v1/rest` |
+| WAQI | Global air quality (11,000+ stations, bounds-based) | `/waqi-api/*` → `api.waqi.info` |
+| Open-Meteo | Global weather (no auth) | Direct browser fetch (no proxy needed) |
+
 ### Request flow
 
 ```
-Browser → /api/* (same-origin)
-  → Vite dev proxy (development)        → api.gios.gov.pl/pjp-api/rest
-  → Nginx /api/ proxy (production)      → api.gios.gov.pl/pjp-api/rest
+Browser → /api/*      → Vite proxy (dev) / Nginx (prod) → api.gios.gov.pl
+Browser → /waqi-api/* → Vite proxy (dev) / Nginx (prod) → api.waqi.info
+Browser → open-meteo  → direct (CORS-permissive API)
 ```
 
-`VITE_GIOS_API_BASE_URL` is baked at build time (Vite build-time env var, not runtime). It is always set to `/api` in production builds. Changing it requires a rebuild.
+**WAQI token injection**: The token is appended server-side as `?token=…` — never in the browser bundle. In dev, `vite.config.ts` `proxyReq` handler injects `VITE_WAQI_TOKEN`; in prod, the Dockerfile `CMD` generates `/etc/nginx/waqi-token.conf` from the `WAQI_TOKEN` env var and nginx includes it. The nginx WAQI location requires `resolver 8.8.8.8 valid=300s ipv6=off;` because `proxy_pass` uses a variable (`$waqi_token`).
+
+`VITE_GIOS_API_BASE_URL` is baked at build time. It is always `/api` in production. Changing it requires a rebuild.
 
 ### Data pipeline per station selection
 
 ```
-giosClient (Zod validated DTO)
-  → mapper (DTO → domain model)
+API client (Zod-validated DTO)
+  → mapper (DTO → Station / domain model)
   → TanStack Query hook (cached)
   → UI component
 ```
 
-Raw GIOŚ API types are never used in UI components. Always go through the mapper layer.
+Raw API types are never used in UI components. Always go through the mapper layer.
+
+### Station model and dual-source rendering
+
+`Station.source` is `'gios' | 'waqi'`. This drives different rendering logic throughout the app:
+
+- **WAQI stations**: `aqiLevel` is pre-computed in the bounds response (`mapWaqiBoundsStationToStation`). `WaqiStationMarker` reads `station.aqiLevel` directly — no extra fetch on marker render.
+- **GIOŚ stations**: `aqiLevel` is `undefined`; `GiosStationMarker` calls `useAirQualityIndex(station.id)` per marker.
+- **WAQI AQI is not fetched on map load** for GIOŚ stations — only on selection — to avoid 500+ parallel requests.
+- `country` is `null` for WAQI stations (WAQI bounds API doesn't return country codes). The tier-1 country filter treats `null` as "worldwide".
+- `voivodeship` is `null` for WAQI stations. The tier-2 voivodeship filter only shows GIOŚ.
+
+### `App.tsx` station pipeline
+
+```
+giosStations (useStations)
+  + globalStations (useGlobalStations(mapBounds))
+      → filter out isInPoland() — avoids GIOŚ/WAQI duplicates
+  → allStations
+      → filterByCountry(selectedCountry)   — tier-1 filter
+      → filter by voivodeship              — tier-2 filter (Poland only)
+  → displayedStations → map markers + search
+```
+
+`isInPoland()` uses a hardcoded bbox (`14.1–24.2°E, 49.0–54.9°N`). WAQI stations inside Poland are never shown because GIOŚ provides better data for that region.
+
+`clampMapBounds()` normalises Leaflet bounds to `[−180, 180] / [−90, 90]` before passing to `useGlobalStations`. Leaflet produces out-of-range longitudes (e.g. 397°) when the user zooms out past the dateline.
+
+### WAQI bounds-based loading
+
+`useGlobalStations(mapBounds)` queries WAQI only for the current map viewport (debounced 500ms after `moveend`). Stations outside the current view are not loaded until the user pans/zooms there. The map starts centred on Europe (`[50°N, 10°E]`, zoom 4) so the first query covers most of the continent.
+
+### Two-tier filter bar
+
+`StationFilterBar` provides:
+- **Tier 1**: country select (null = all worldwide). Derived from `station.country` of loaded stations. WAQI stations appear here only when they have a non-null country, which currently never happens — they always fall into "Cały świat".
+- **Tier 2**: voivodeship chips — visible only when Poland is selected. Uses `groupByVoivodeship` + `avgAqiLevelForGroup` from `stationFilters.ts`.
+
+Selecting a country or voivodeship clears `selectedStationId`.
+
+### Weather feature
+
+`src/features/weather/` mirrors the air-quality feature structure. `WeatherPanel` is rendered inside `StationDetailsPanel` when a station is selected. It fetches current + 7-day historical weather from Open-Meteo using the station's lat/lon. Open-Meteo is CORS-permissive so no proxy is needed.
 
 ### Dual layout (desktop vs mobile)
 
@@ -65,15 +117,16 @@ Both use the same component. Layout switching is done entirely with Tailwind res
 
 AQI badge and marker colours are computed at runtime from `airQualityScale.ts`. Tailwind purges unused dynamic class names, so dynamic colour values must use `style={{ backgroundColor: colour, color: textColour }}`, never template literals like `bg-[${colour}]`.
 
-### Zod schemas live in `gios.schemas.ts`, types inferred from them in `gios.dto.ts`
+### Zod schemas live in `*.schemas.ts`, types inferred from them in `*.dto.ts`
 
-DTO types are `z.infer<typeof Schema>`. Never write DTO types by hand; derive them. Domain model types in `model/*.types.ts` are handwritten and independent of Zod.
+This applies to both `gios.schemas.ts / gios.dto.ts` and `waqi.schemas.ts / waqi.dto.ts`. DTO types are `z.infer<typeof Schema>`. Never write DTO types by hand; derive them. Domain model types in `model/*.types.ts` are handwritten and independent of Zod.
 
 ### TanStack Query cache times by data volatility
 
 | Hook | `staleTime` |
 |---|---|
 | `useStations` | 10 min |
+| `useGlobalStations` | 5 min |
 | `useAirQualityIndex` | 5 min (global default) |
 | `useSensorMeasurements` | 5 min (global default) |
 
@@ -89,7 +142,7 @@ All hooks that take a nullable ID use this pattern. Do not skip the guard.
 
 ### AQI levels
 
-`AqiLevel` is `0 | 1 | 2 | 3 | 4 | 5`. `getAqiInfo(null)` returns `UNKNOWN_AQI` (grey). AQI is **not** fetched on map load — only when a station is selected, to avoid 500+ parallel requests.
+`AqiLevel` is `0 | 1 | 2 | 3 | 4 | 5`. `getAqiInfo(null)` returns `UNKNOWN_AQI` (grey). AQI is **not** fetched on map load for GIOŚ stations — only when a station is selected. WAQI stations carry their AQI from the bounds query.
 
 ### `onMouseDown` in `StationList`
 
@@ -103,11 +156,15 @@ List items in the search dropdown use `onMouseDown` (not `onClick`) to prevent t
 
 Present on: `map-container`, `station-details-panel`, `pollutant-card`, `loading-state`, `error-state`, `empty-state`. Used by both component tests and E2E tests — do not remove them.
 
+### Dev-only debug logging
+
+`import.meta.env.DEV`-guarded `console.debug` calls exist in `App.tsx` (station counts per source, bounds) and `waqiClient.ts` (outgoing URL, response count). Do not remove or promote to `console.log`.
+
 ## Testing
 
 ### Unit/component tests (Vitest + jsdom)
 
-Tests live alongside source in `src/**/*.test.ts` and `src/**/*.spec.tsx`. `react-leaflet` is fully mocked in any test that imports map components — see `AirQualityMap.test.tsx` for the mock pattern. `recharts` is mocked in chart tests.
+Tests live alongside source in `src/**/*.test.ts` and `src/**/*.spec.tsx`. `react-leaflet` is fully mocked in any test that imports map components — see `AirQualityMap.spec.tsx` for the mock pattern. `recharts` is mocked in chart tests.
 
 ### E2E tests (Playwright)
 
@@ -119,8 +176,23 @@ All tests use `mockGiosApi(page)` from `tests/e2e/helpers/mockApi.ts` to interce
 clearsky.sundreamsoftware.pl → Nginx (TLS) → 127.0.0.1:5010 → Docker: clearsky-web
 ```
 
-- `nginx.container.conf` — inside the container (SPA routing + `/api` proxy + `/health`)
+- `nginx.container.conf` — inside the container (SPA routing + `/api` proxy + `/waqi-api` proxy + `/health`)
 - `nginx.server.conf` — on the host (HTTPS termination + reverse proxy to :5010)
 - Health check: `GET /health` returns `200 OK`
 - CI/CD: `.github/workflows/deploy.yml` — tests → build → GHCR push → SSH deploy + retry health check
-- Required GitHub secrets: `SERVER_HOST`, `SERVER_USER`, `SSH_PRIVATE_KEY`
+
+### Required GitHub secrets
+
+| Secret | Description |
+|---|---|
+| `SERVER_HOST` | Server IP or hostname |
+| `SERVER_USER` | SSH username |
+| `SSH_PRIVATE_KEY` | Private key for SSH access |
+| `WAQI_TOKEN` | WAQI API token — injected into container at runtime via `waqi-token.conf` |
+
+### Local environment (`.env.local`)
+
+| Variable | Description |
+|---|---|
+| `VITE_GIOS_API_BASE_URL` | Always `/api` (proxied) |
+| `VITE_WAQI_TOKEN` | WAQI token for dev proxy — get free token at aqicn.org/data-platform/token |
