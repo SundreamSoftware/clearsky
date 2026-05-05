@@ -103,8 +103,9 @@ function WaqiStationMarker({
   );
 }
 
-const POLAND_CENTER: [number, number] = [52.0, 19.5];
-const DEFAULT_ZOOM = 6;
+// Start centered on Europe at zoom 4 so WAQI stations outside Poland are immediately visible.
+const EUROPE_CENTER: [number, number] = [50.0, 10.0];
+const DEFAULT_ZOOM = 4;
 
 export function AirQualityMap({
   stations,
@@ -134,7 +135,7 @@ export function AirQualityMap({
         </div>
       )}
       <MapContainer
-        center={POLAND_CENTER}
+        center={EUROPE_CENTER}
         zoom={DEFAULT_ZOOM}
         className="h-full w-full"
         data-testid="map"
