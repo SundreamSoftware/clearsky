@@ -147,6 +147,7 @@ function App() {
             onBoundsChange={handleBoundsChange}
             isLoading={isLoading}
             error={error instanceof Error ? error : null}
+            waqiError={isWaqiError}
           />
         </ErrorBoundary>
       </div>

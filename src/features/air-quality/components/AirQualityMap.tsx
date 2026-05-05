@@ -15,6 +15,7 @@ interface AirQualityMapProps {
   onBoundsChange?: (bounds: MapBounds) => void;
   isLoading: boolean;
   error: Error | null;
+  waqiError?: boolean;
 }
 
 interface MapControllerProps {
@@ -115,6 +116,7 @@ export function AirQualityMap({
   onBoundsChange,
   isLoading,
   error,
+  waqiError,
 }: AirQualityMapProps) {
   if (error) {
     return (
@@ -132,6 +134,11 @@ export function AirQualityMap({
       {isLoading && (
         <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/60">
           <LoadingState message="Ładowanie stacji..." />
+        </div>
+      )}
+      {waqiError && (
+        <div className="absolute left-1/2 top-2 z-[1000] -translate-x-1/2 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-800 shadow-md ring-1 ring-amber-200">
+          Global stations could not be loaded — check WAQI token configuration.
         </div>
       )}
       <MapContainer

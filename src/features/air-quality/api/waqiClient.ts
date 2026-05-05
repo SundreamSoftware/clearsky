@@ -13,18 +13,20 @@ export type WaqiBounds = {
 };
 
 export const waqiClient = {
-  async getLocationsByBounds(bounds: WaqiBounds): Promise<WaqiBoundsStationDto[]> {
+  async getLocationsByBounds(bounds: WaqiBounds, signal?: AbortSignal): Promise<WaqiBoundsStationDto[]> {
     const { minLat, minLon, maxLat, maxLon } = bounds;
     const path = `/v2/map/bounds/?latlng=${minLat},${minLon},${maxLat},${maxLon}&networks=all`;
     if (import.meta.env.DEV) {
       console.debug('[WAQI] getLocationsByBounds', { bounds, path: `/waqi-api${path}` });
     }
-    const raw = await client.get<unknown>(path);
+    const raw = await client.get<unknown>(path, { signal });
     const parsed = WaqiBoundsResponseSchema.parse(raw);
+    if (parsed.status !== 'ok') {
+      throw new Error(`WAQI API error: status=${parsed.status}`);
+    }
     if (import.meta.env.DEV) {
       console.debug('[WAQI] response status:', parsed.status, '| stations:', parsed.data.length);
     }
-    if (parsed.status !== 'ok') return [];
     return parsed.data;
   },
 

@@ -8,8 +8,8 @@ export type MapBounds = WaqiBounds;
 export function useGlobalStations(bounds: MapBounds | null) {
   return useQuery({
     queryKey: ['stations', 'waqi', bounds],
-    queryFn: async () => {
-      const dtos = await waqiClient.getLocationsByBounds(bounds!);
+    queryFn: async ({ signal }) => {
+      const dtos = await waqiClient.getLocationsByBounds(bounds!, signal);
       return mapWaqiBoundsStationsToStations(dtos);
     },
     enabled: bounds !== null,

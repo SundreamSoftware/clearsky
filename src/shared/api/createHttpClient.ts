@@ -4,7 +4,7 @@ import { ApiRequestError } from './apiError';
 export function createHttpClient(
   baseURL: string,
   headers?: Record<string, string>,
-): { get<T>(url: string): Promise<T> } {
+): { get<T>(url: string, config?: { signal?: AbortSignal }): Promise<T> } {
   const instance = axios.create({
     baseURL,
     timeout: 10_000,
@@ -21,8 +21,8 @@ export function createHttpClient(
   );
 
   return {
-    get<T>(url: string): Promise<T> {
-      return instance.get<T>(url).then((res) => res.data);
+    get<T>(url: string, config?: { signal?: AbortSignal }): Promise<T> {
+      return instance.get<T>(url, { signal: config?.signal }).then((res) => res.data);
     },
   };
 }
