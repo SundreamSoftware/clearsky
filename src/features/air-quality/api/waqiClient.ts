@@ -15,10 +15,15 @@ export type WaqiBounds = {
 export const waqiClient = {
   async getLocationsByBounds(bounds: WaqiBounds): Promise<WaqiBoundsStationDto[]> {
     const { minLat, minLon, maxLat, maxLon } = bounds;
-    const raw = await client.get<unknown>(
-      `/v2/map/bounds/?latlng=${minLat},${minLon},${maxLat},${maxLon}&networks=all`,
-    );
+    const path = `/v2/map/bounds/?latlng=${minLat},${minLon},${maxLat},${maxLon}&networks=all`;
+    if (import.meta.env.DEV) {
+      console.debug('[WAQI] getLocationsByBounds', { bounds, path: `/waqi-api${path}` });
+    }
+    const raw = await client.get<unknown>(path);
     const parsed = WaqiBoundsResponseSchema.parse(raw);
+    if (import.meta.env.DEV) {
+      console.debug('[WAQI] response status:', parsed.status, '| stations:', parsed.data.length);
+    }
     if (parsed.status !== 'ok') return [];
     return parsed.data;
   },

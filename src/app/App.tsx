@@ -23,6 +23,30 @@ function isInPoland(station: Station): boolean {
   );
 }
 
+/**
+ * Clamps map bounds to valid lat/lon ranges.
+ * Leaflet wraps longitude > 180° when the user zooms out to see multiple world copies;
+ * the WAQI API rejects coordinates outside [-180, 180] / [-90, 90].
+ */
+function clampMapBounds(bounds: MapBounds): MapBounds {
+  const lonSpan = bounds.maxLon - bounds.minLon;
+  // If the viewport spans ≥ 360° (whole world or map tiled multiple times), use global bounds.
+  if (lonSpan >= 360) {
+    return {
+      minLat: Math.max(-90, bounds.minLat),
+      maxLat: Math.min(90, bounds.maxLat),
+      minLon: -180,
+      maxLon: 180,
+    };
+  }
+  return {
+    minLat: Math.max(-90, bounds.minLat),
+    maxLat: Math.min(90, bounds.maxLat),
+    minLon: Math.max(-180, bounds.minLon),
+    maxLon: Math.min(180, bounds.maxLon),
+  };
+}
+
 function App() {
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [selectedSensorId, setSelectedSensorId] = useState<number | null>(null);
@@ -35,11 +59,22 @@ function App() {
   const [selectedVoivodeship, setSelectedVoivodeship] = useState<string | null>(null);
 
   const { data: giosStations = [], isLoading, error } = useStations();
-  const { data: globalStations = [] } = useGlobalStations(mapBounds);
+  const { data: globalStations = [], isError: isWaqiError } = useGlobalStations(mapBounds);
 
   // WAQI stations inside Poland are excluded to avoid duplicating GIOŚ coverage.
   const filteredGlobalStations = globalStations.filter((s) => !isInPoland(s));
   const allStations = [...giosStations, ...filteredGlobalStations];
+
+  if (import.meta.env.DEV) {
+    console.debug('[ClearSky] stations', {
+      gios: giosStations.length,
+      waqiRaw: globalStations.length,
+      waqiOutsidePoland: filteredGlobalStations.length,
+      total: allStations.length,
+      bounds: mapBounds,
+      waqiError: isWaqiError,
+    });
+  }
 
   // Apply tier-1: narrow to the selected country (null = show all worldwide stations).
   const countryFilteredStations = filterByCountry(allStations, selectedCountry);
@@ -67,7 +102,11 @@ function App() {
       clearTimeout(boundsDebounceRef.current);
     }
     boundsDebounceRef.current = setTimeout(() => {
-      setMapBounds(bounds);
+      const clamped = clampMapBounds(bounds);
+      if (import.meta.env.DEV) {
+        console.debug('[ClearSky] map bounds update', { raw: bounds, clamped });
+      }
+      setMapBounds(clamped);
     }, 500);
   }
 

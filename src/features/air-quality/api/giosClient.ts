@@ -9,7 +9,8 @@ import type { StationDto, SensorDto, MeasurementsDto, AqiDto } from './gios.dto'
 
 export const giosClient = {
   async getStations(): Promise<StationDto[]> {
-    const firstPage = await httpClient.get<unknown>('/station/findAll?size=20&page=0');
+    // Use a large page size to minimise the number of parallel requests and avoid rate-limit (429).
+    const firstPage = await httpClient.get<unknown>('/station/findAll?size=500&page=0');
     const parsed = StationPageDtoSchema.parse(firstPage);
     const { totalPages } = parsed;
     const stations = [...parsed['Lista stacji pomiarowych']];
@@ -19,7 +20,7 @@ export const giosClient = {
       const results = await Promise.all(
         remainingPages.map((page) =>
           httpClient
-            .get<unknown>(`/station/findAll?size=20&page=${page}`)
+            .get<unknown>(`/station/findAll?size=500&page=${page}`)
             .then((raw) => StationPageDtoSchema.parse(raw)['Lista stacji pomiarowych']),
         ),
       );
