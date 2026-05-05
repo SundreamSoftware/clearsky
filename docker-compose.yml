@@ -1,14 +1,12 @@
 services:
   clearsky-web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/sundreamsoftware/clearsky:latest
     container_name: clearsky-web
     restart: unless-stopped
     ports:
       - "127.0.0.1:5010:80"
-    environment:
-      - WAQI_TOKEN=${WAQI_TOKEN:-}
+    volumes:
+      - ./waqi-token.conf:/etc/nginx/waqi-token.conf:ro
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
