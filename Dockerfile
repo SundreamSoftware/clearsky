@@ -12,8 +12,9 @@ RUN npm run build
 # Stage 2: Serve with Nginx
 FROM nginx:alpine AS runner
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.container.conf /etc/nginx/nginx.container.conf.template
+COPY nginx.container.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
-# If OPENAQ_API_KEY is set, substitute it into the config; otherwise strip the header line
-# so nginx never gets an empty proxy_set_header value (which is a fatal syntax error).
-CMD ["/bin/sh", "-c", "if [ -n \"$OPENAQ_API_KEY\" ]; then envsubst '${OPENAQ_API_KEY}' < /etc/nginx/nginx.container.conf.template > /etc/nginx/conf.d/default.conf; else sed '/X-API-Key/d' /etc/nginx/nginx.container.conf.template > /etc/nginx/conf.d/default.conf; fi && nginx -g 'daemon off;'"]
+# Generate /etc/nginx/openaq-apikey.conf at container start.
+# If OPENAQ_API_KEY is set, writes: proxy_set_header X-API-Key "<key>";
+# If not set, writes an empty comment so the include still succeeds.
+CMD ["/bin/sh", "-c", "if [ -n \"$OPENAQ_API_KEY\" ]; then printf 'proxy_set_header X-API-Key \"%s\";\\n' \"$OPENAQ_API_KEY\" > /etc/nginx/openaq-apikey.conf; else printf '# OPENAQ_API_KEY not configured\\n' > /etc/nginx/openaq-apikey.conf; fi && nginx -g 'daemon off;'"]
