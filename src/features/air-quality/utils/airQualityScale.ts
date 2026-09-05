@@ -47,3 +47,13 @@ export function usAqiToLevel(aqi: number): AqiLevel {
   if (aqi <= 300) return 4;
   return 5;
 }
+
+/** WAQI uses US AQI; these categories must not be labelled with the Polish index names. */
+export const US_AQI_SCALE: typeof AQI_SCALE = {
+  0: { name: 'Dobry (0–50)', colour: '#009966' },
+  1: { name: 'Umiarkowany (51–100)', colour: '#ffde33' },
+  2: { name: 'Niezdrowy dla grup wrażliwych (101–150)', colour: '#ff9933' },
+  3: { name: 'Niezdrowy (151–200)', colour: '#cc0033' },
+  4: { name: 'Bardzo niezdrowy (201–300)', colour: '#660099' },
+  5: { name: 'Niebezpieczny (301+)', colour: '#7e0023' },
+};

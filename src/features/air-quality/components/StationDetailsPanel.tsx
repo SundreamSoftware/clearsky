@@ -9,8 +9,15 @@ import { useWaqiStationDetail } from '@/features/air-quality/hooks/useWaqiStatio
 import type { Sensor } from '@/features/air-quality/model/sensor.types';
 import type { Station } from '@/features/air-quality/model/station.types';
 import type { WaqiFeedDataDto } from '@/features/air-quality/api/waqi.dto';
-import { getAqiInfo, pm25ToAqiLevel } from '@/features/air-quality/utils/airQualityScale';
-import type { AqiLevel } from '@/features/air-quality/utils/airQualityScale';
+import {
+  usAqiToLevel,
+  US_AQI_SCALE,
+} from '@/features/air-quality/utils/airQualityScale';
+import {
+  parseAqi,
+  isCurrentReading,
+  giosTimestamp,
+} from '@/features/air-quality/utils/dataValidity';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { WeatherPanel } from '@/features/weather/components/WeatherPanel';
 import { WeatherHistoryChart } from '@/features/weather/components/WeatherHistoryChart';
@@ -25,7 +32,14 @@ interface StationDetailsPanelProps {
   onClose: () => void;
 }
 
-const SUPPORTED_POLLUTANTS = ['PM2.5', 'PM10', 'NO2', 'O3', 'SO2', 'CO'] as const;
+const SUPPORTED_POLLUTANTS = [
+  'PM2.5',
+  'PM10',
+  'NO2',
+  'O3',
+  'SO2',
+  'CO',
+] as const;
 
 export function StationDetailsPanel({
   station,
@@ -40,7 +54,9 @@ export function StationDetailsPanel({
   const isWaqi = station?.source === 'waqi';
 
   // GIOŚ-only hooks (disabled for WAQI)
-  const { data: giosAqi, isLoading: aqiLoading } = useAirQualityIndex(isGios ? stationId : null);
+  const { data: giosAqi, isLoading: aqiLoading } = useAirQualityIndex(
+    isGios ? stationId : null,
+  );
   const {
     data: sensors = [],
     isLoading: sensorsLoading,
@@ -48,51 +64,51 @@ export function StationDetailsPanel({
   } = useStationSensors(isGios ? stationId : null);
 
   // WAQI-only hook (disabled for GIOŚ)
-  const { data: waqiDetail, isLoading: waqiLoading, isError: waqiFeedError } = useWaqiStationDetail(
-    isWaqi ? station : null,
-  );
-
   const {
-    data: weather,
-    isLoading: weatherLoading,
-  } = useWeather(station?.latitude ?? null, station?.longitude ?? null);
+    data: waqiDetail,
+    isLoading: waqiLoading,
+    isError: waqiFeedError,
+  } = useWaqiStationDetail(isWaqi ? station : null);
+
+  const { data: weather, isLoading: weatherLoading } = useWeather(
+    station?.latitude ?? null,
+    station?.longitude ?? null,
+  );
 
   const supportedSensors = sensors.filter((sensor) =>
-    SUPPORTED_POLLUTANTS.includes(sensor.parameterCode as (typeof SUPPORTED_POLLUTANTS)[number]),
+    SUPPORTED_POLLUTANTS.includes(
+      sensor.parameterCode as (typeof SUPPORTED_POLLUTANTS)[number],
+    ),
   );
 
-  // Fallback AQI for GIOŚ stations: GIOŚ API only computes an official index for continuous
-  // monitoring stations. For stations where indexLevel is null, derive AQI from PM2.5 if available.
-  const pm25SensorId = supportedSensors.find((s) => s.parameterCode === 'PM2.5')?.id ?? null;
-  const { data: pm25Measurements = [] } = useSensorMeasurements(
-    isGios ? pm25SensorId : null,
-    'PM2.5',
-  );
-  const firstPm25 = pm25Measurements[0];
-  const fallbackAqiLevel: AqiLevel | null =
-    firstPm25 != null ? pm25ToAqiLevel(firstPm25.value) : null;
-
-  // Unified AQI display values
-  const aqiLevel = isGios ? (giosAqi?.indexLevel ?? fallbackAqiLevel) : (station?.aqiLevel ?? null);
-  const aqiName = isGios
-    ? (giosAqi?.indexName ?? (aqiLevel !== null ? getAqiInfo(aqiLevel).name : null))
-    : getAqiInfo(aqiLevel).name;
-  // Raw numeric AQI: available for WAQI stations only. Prefer the live feed value over the
-  // pre-fetched bounds value as the feed is fetched fresh when the station is selected.
-  const rawAqi: number | null = isGios
-    ? null
-    : (() => {
-        const feedAqi = waqiDetail?.aqi;
-        if (typeof feedAqi === 'number' && feedAqi >= 0) return feedAqi;
-        if (typeof feedAqi === 'string') {
-          const n = parseInt(feedAqi, 10);
-          if (!isNaN(n) && n >= 0) return n;
-        }
-        return station?.rawAqi ?? null;
-      })();
+  const feedTime = waqiDetail?.time;
+  const feedTimestamp =
+    feedTime?.iso ??
+    (feedTime?.s && feedTime.tz
+      ? `${feedTime.s.replace(' ', 'T')}${feedTime.tz}`
+      : null);
   const aqiCalculatedAt = isGios
-    ? (giosAqi?.calculatedAt ?? null)
-    : (waqiDetail?.time?.s ?? null);
+    ? giosTimestamp(giosAqi?.sourceDataDate)
+    : waqiDetail
+      ? feedTimestamp
+      : (station?.observedAt ?? null);
+  const current = isCurrentReading(aqiCalculatedAt);
+  const rawAqi =
+    isGios || !current
+      ? null
+      : parseAqi(waqiDetail ? waqiDetail.aqi : station?.rawAqi);
+  const aqiLevel = !current
+    ? null
+    : isGios
+      ? (giosAqi?.indexLevel ?? null)
+      : rawAqi === null
+        ? null
+        : usAqiToLevel(rawAqi);
+  const aqiName = isGios
+    ? (giosAqi?.indexName ?? null)
+    : aqiLevel === null
+      ? null
+      : US_AQI_SCALE[aqiLevel as keyof typeof US_AQI_SCALE].name;
   const isAqiLoading = isGios ? aqiLoading : waqiLoading;
 
   useEffect(() => {
@@ -106,7 +122,10 @@ export function StationDetailsPanel({
   }
 
   return (
-    <aside className="flex min-h-full flex-col bg-[var(--bg)] transition-colors" data-testid="station-details-panel">
+    <aside
+      className="flex min-h-full flex-col bg-[var(--bg)] transition-colors"
+      data-testid="station-details-panel"
+    >
       <div className="border-b border-[var(--border)] px-5 pb-4 pt-3">
         <div className="mb-2 flex items-start justify-between gap-4">
           <div>
@@ -134,14 +153,28 @@ export function StationDetailsPanel({
       </div>
 
       <section className="border-b border-[var(--border)] px-5 py-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Indeks jakości powietrza</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+          {isGios ? 'Polski indeks jakości powietrza · GIOŚ' : 'US AQI · WAQI'}
+        </p>
         {isAqiLoading ? (
           <div className="h-14 w-36 animate-pulse rounded-xl bg-[var(--bg-secondary)]" />
         ) : (
           <div className="space-y-2">
-            <AirQualityBadge aqiLevel={aqiLevel} aqiName={aqiName} rawValue={rawAqi} size="lg" />
+            <AirQualityBadge
+              source={station.source}
+              aqiLevel={aqiLevel}
+              aqiName={aqiName}
+              rawValue={rawAqi}
+              size="lg"
+            />
+            {!current && (
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Brak aktualnego indeksu. Odczyt jest nieaktualny lub
+                niedostępny.
+              </p>
+            )}
             <p className="text-xs text-[var(--text-muted)]">
-              Zaktualizowano:{' '}
+              Czas pomiaru:{' '}
               <span className="text-[var(--text)]">
                 {aqiCalculatedAt ? formatDateTime(aqiCalculatedAt) : '—'}
               </span>
@@ -152,20 +185,29 @@ export function StationDetailsPanel({
 
       <section className="border-b border-[var(--border)] px-5 py-4">
         <div className="mb-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Zanieczyszczenia</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Zanieczyszczenia
+          </p>
         </div>
 
-        {isGios && (
-          sensorsLoading ? (
+        {isGios &&
+          (sensorsLoading ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="h-24 animate-pulse rounded-xl bg-[var(--bg-secondary)]" />
+                <div
+                  key={index}
+                  className="h-24 animate-pulse rounded-xl bg-[var(--bg-secondary)]"
+                />
               ))}
             </div>
           ) : sensorsError ? (
-            <p className="text-sm text-[var(--text-muted)]">Brak danych czujnikowych.</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              Brak danych czujnikowych.
+            </p>
           ) : supportedSensors.length === 0 ? (
-            <p className="text-sm text-[var(--text-muted)]">Brak obsługiwanych sensorów.</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              Brak obsługiwanych sensorów.
+            </p>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {supportedSensors.map((sensor) => (
@@ -177,26 +219,34 @@ export function StationDetailsPanel({
                 />
               ))}
             </div>
-          )
-        )}
+          ))}
 
-        {isWaqi && (
-          waqiLoading ? (
+        {isWaqi &&
+          (waqiLoading ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-16 animate-pulse rounded-xl bg-[var(--bg-secondary)]" />
+                <div
+                  key={index}
+                  className="h-16 animate-pulse rounded-xl bg-[var(--bg-secondary)]"
+                />
               ))}
             </div>
           ) : waqiFeedError ? (
-            <p className="text-sm text-[var(--text-muted)]">Nie udało się załadować szczegółów stacji.</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              Nie udało się załadować szczegółów stacji.
+            </p>
+          ) : !current ? (
+            <p className="text-sm text-[var(--text-muted)]">
+              Brak aktualnych danych o zanieczyszczeniach.
+            </p>
           ) : waqiDetail?.iaqi ? (
             <WaqiPollutantsSection iaqi={waqiDetail.iaqi} />
           ) : (
             <p className="text-sm text-[var(--text-muted)]">
-              Ta stacja raportuje wyłącznie zbiorczy wskaźnik AQI — dane poszczególnych zanieczyszczeń są niedostępne.
+              Ta stacja raportuje wyłącznie zbiorczy wskaźnik AQI — dane
+              poszczególnych zanieczyszczeń są niedostępne.
             </p>
-          )
-        )}
+          ))}
       </section>
 
       {isGios && (
@@ -216,7 +266,9 @@ export function StationDetailsPanel({
                       ? 'text-white'
                       : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:bg-[var(--border)]'
                   }`}
-                  style={chartRange === r ? { backgroundColor: 'var(--accent)' } : {}}
+                  style={
+                    chartRange === r ? { backgroundColor: 'var(--accent)' } : {}
+                  }
                 >
                   {r}
                 </button>
@@ -225,13 +277,16 @@ export function StationDetailsPanel({
           </div>
           {selectedSensorId !== null ? (
             (() => {
-              const sensor = supportedSensors.find((item) => item.id === selectedSensorId);
+              const sensor = supportedSensors.find(
+                (item) => item.id === selectedSensorId,
+              );
               return sensor ? (
                 <PollutantChart
                   sensorId={selectedSensorId}
                   parameterCode={sensor.parameterCode}
                   parameterName={sensor.parameterName}
                   unit={sensor.unit}
+                  range={chartRange}
                 />
               ) : null;
             })()
@@ -245,7 +300,9 @@ export function StationDetailsPanel({
 
       {(weatherLoading || weather) && (
         <section className="border-t border-[var(--border)] px-5 py-4">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Warunki pogodowe</h3>
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Warunki pogodowe
+          </h3>
           {weatherLoading ? (
             <LoadingState message="Ładowanie pogody..." />
           ) : weather ? (
@@ -254,10 +311,50 @@ export function StationDetailsPanel({
         </section>
       )}
 
+      <section className="border-t border-[var(--border)] px-5 py-4 text-sm text-[var(--text-muted)]">
+        <p>
+          Źródło:{' '}
+          <a
+            className="underline"
+            href={
+              isGios ? 'https://powietrze.gios.gov.pl/' : 'https://aqicn.org/'
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            {isGios ? 'GIOŚ' : 'World Air Quality Index Project'}
+          </a>
+        </p>
+        {waqiDetail?.attributions
+          ?.filter((item) => /^https?:\/\//.test(item.url))
+          .map((item) => (
+            <a
+              className="mt-1 block underline"
+              key={item.url}
+              href={item.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {item.name}
+            </a>
+          ))}
+        {isWaqi && (
+          <p className="mt-2">
+            Wartości zanieczyszczeń to indeksy cząstkowe US AQI, nie stężenia w
+            µg/m³. Skala różni się od polskiego indeksu GIOŚ.
+          </p>
+        )}
+      </section>
       {station && (
         <section className="border-t border-[var(--border)] px-5 py-4">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Historia pogody</h3>
-          <WeatherHistoryChart lat={station.latitude} lon={station.longitude} range={chartRange} />
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Historia pogody
+          </h3>
+          <WeatherHistoryChart
+            lat={station.latitude}
+            lon={station.longitude}
+            range={chartRange}
+          />
         </section>
       )}
     </aside>
@@ -273,8 +370,14 @@ function PollutantCardWithData({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const { data: measurements = [], isLoading } = useSensorMeasurements(sensor.id, sensor.parameterCode);
-  const latestMeasurement = measurements[0] ?? null;
+  const { data: measurements = [], isLoading } = useSensorMeasurements(
+    sensor.id,
+    sensor.parameterCode,
+  );
+  const latestMeasurement =
+    measurements.find((measurement) =>
+      isCurrentReading(giosTimestamp(measurement.date)),
+    ) ?? null;
 
   return (
     <PollutantCard
@@ -289,28 +392,39 @@ function PollutantCardWithData({
 
 type WaqiIaqi = NonNullable<WaqiFeedDataDto['iaqi']>;
 
-const WAQI_POLLUTANTS: { key: keyof WaqiIaqi; name: string; code: string; unit: string }[] = [
-  { key: 'pm25', name: 'Particulate matter < 2.5 µm', code: 'PM2.5', unit: 'µg/m³' },
-  { key: 'pm10', name: 'Particulate matter < 10 µm', code: 'PM10', unit: 'µg/m³' },
-  { key: 'no2', name: 'Nitrogen dioxide', code: 'NO2', unit: 'ppb' },
-  { key: 'o3', name: 'Ozone', code: 'O3', unit: 'ppb' },
-  { key: 'so2', name: 'Sulfur dioxide', code: 'SO2', unit: 'ppb' },
-  { key: 'co', name: 'Carbon monoxide', code: 'CO', unit: 'ppm' },
+const WAQI_POLLUTANTS: {
+  key: keyof WaqiIaqi;
+  name: string;
+  code: string;
+  unit: string;
+}[] = [
+  { key: 'pm25', name: 'Pył zawieszony PM2.5', code: 'PM2.5', unit: 'AQI' },
+  { key: 'pm10', name: 'Pył zawieszony PM10', code: 'PM10', unit: 'AQI' },
+  { key: 'no2', name: 'Dwutlenek azotu', code: 'NO2', unit: 'AQI' },
+  { key: 'o3', name: 'Ozon', code: 'O3', unit: 'AQI' },
+  { key: 'so2', name: 'Dwutlenek siarki', code: 'SO2', unit: 'AQI' },
+  { key: 'co', name: 'Tlenek węgla', code: 'CO', unit: 'AQI' },
 ];
 
 function WaqiPollutantsSection({ iaqi }: { iaqi: WaqiIaqi }) {
-  const available = WAQI_POLLUTANTS.filter((p) => iaqi[p.key] !== undefined);
+  const available = WAQI_POLLUTANTS.filter(
+    (p) => parseAqi(iaqi[p.key]?.v) !== null,
+  );
 
   if (available.length === 0) {
     return (
       <p className="text-sm text-gray-500">
-        Ta stacja raportuje wyłącznie zbiorczy wskaźnik AQI — dane poszczególnych zanieczyszczeń są niedostępne.
+        Ta stacja raportuje wyłącznie zbiorczy wskaźnik AQI — dane
+        poszczególnych zanieczyszczeń są niedostępne.
       </p>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1" data-testid="pollutant-card">
+    <div
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1"
+      data-testid="pollutant-card"
+    >
       {available.map((p) => {
         const entry = iaqi[p.key];
         const value = entry?.v ?? null;
@@ -323,14 +437,20 @@ function WaqiPollutantsSection({ iaqi }: { iaqi: WaqiIaqi }) {
             <div className="flex-1 p-3.5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[var(--text)]">{p.name}</p>
-                  <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{p.code}</p>
+                  <p className="text-sm font-semibold text-[var(--text)]">
+                    {p.name}
+                  </p>
+                  <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                    {p.code}
+                  </p>
                 </div>
                 <p className="text-lg font-bold text-[var(--text)]">
                   {value !== null ? formatMeasurementValue(value, p.unit) : '–'}
                 </p>
               </div>
-              <p className="mt-1.5 text-xs text-[var(--text-muted)]">{p.unit}</p>
+              <p className="mt-1.5 text-xs text-[var(--text-muted)]">
+                {p.unit}
+              </p>
             </div>
           </div>
         );
@@ -338,4 +458,3 @@ function WaqiPollutantsSection({ iaqi }: { iaqi: WaqiIaqi }) {
     </div>
   );
 }
-

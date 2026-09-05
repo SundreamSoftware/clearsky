@@ -5,23 +5,36 @@ import {
   MeasurementsDtoSchema,
   AqiDtoSchema,
 } from './gios.schemas';
-import type { StationDto, SensorDto, MeasurementsDto, AqiDto } from './gios.dto';
+import type {
+  StationDto,
+  SensorDto,
+  MeasurementsDto,
+  AqiDto,
+} from './gios.dto';
 
 export const giosClient = {
   async getStations(): Promise<StationDto[]> {
     // Use a large page size to minimise the number of parallel requests and avoid rate-limit (429).
-    const firstPage = await httpClient.get<unknown>('/station/findAll?size=500&page=0');
+    const firstPage = await httpClient.get<unknown>(
+      '/station/findAll?size=500&page=0',
+    );
     const parsed = StationPageDtoSchema.parse(firstPage);
     const { totalPages } = parsed;
     const stations = [...parsed['Lista stacji pomiarowych']];
 
     if (totalPages > 1) {
-      const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 1);
+      const remainingPages = Array.from(
+        { length: totalPages - 1 },
+        (_, i) => i + 1,
+      );
       const results = await Promise.all(
         remainingPages.map((page) =>
           httpClient
             .get<unknown>(`/station/findAll?size=500&page=${page}`)
-            .then((raw) => StationPageDtoSchema.parse(raw)['Lista stacji pomiarowych']),
+            .then(
+              (raw) =>
+                StationPageDtoSchema.parse(raw)['Lista stacji pomiarowych'],
+            ),
         ),
       );
       stations.push(...results.flat());
@@ -41,8 +54,14 @@ export const giosClient = {
     return MeasurementsDtoSchema.parse(raw);
   },
 
-  async getAirQualityIndex(stationId: string): Promise<AqiDto> {
-    const raw = await httpClient.get<unknown>(`/aqindex/getIndex/${stationId}`);
+  async getAirQualityIndex(
+    stationId: string,
+    signal?: AbortSignal,
+  ): Promise<AqiDto> {
+    const raw = await httpClient.get<unknown>(
+      `/aqindex/getIndex/${stationId}`,
+      { signal },
+    );
     return AqiDtoSchema.parse(raw);
   },
 };

@@ -9,7 +9,9 @@ vi.mock('@/features/air-quality/hooks/useAirQualityIndex', () => ({
 }));
 
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: ReactNode }) => <div data-testid="map">{children}</div>,
+  MapContainer: ({ children }: { children: ReactNode }) => (
+    <div data-testid="map">{children}</div>
+  ),
   TileLayer: () => null,
   CircleMarker: ({
     children,
@@ -29,7 +31,16 @@ vi.mock('react-leaflet', () => ({
     </div>
   ),
   Tooltip: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  useMap: () => ({ setView: vi.fn(), flyTo: vi.fn(), getBounds: () => ({ getWest: () => 0, getSouth: () => 0, getEast: () => 10, getNorth: () => 10 }) }),
+  useMap: () => ({
+    setView: vi.fn(),
+    flyTo: vi.fn(),
+    getBounds: () => ({
+      getWest: () => 0,
+      getSouth: () => 0,
+      getEast: () => 10,
+      getNorth: () => 10,
+    }),
+  }),
   useMapEvents: () => null,
 }));
 
@@ -43,6 +54,7 @@ const mockStations: Station[] = [
     longitude: 21.0,
     voivodeship: null,
     source: 'gios',
+    aqiLevel: 0,
     country: 'PL',
   },
   {
@@ -54,6 +66,7 @@ const mockStations: Station[] = [
     longitude: 19.9,
     voivodeship: null,
     source: 'gios',
+    aqiLevel: 0,
     country: 'PL',
   },
 ];

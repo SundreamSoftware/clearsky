@@ -13,6 +13,8 @@ export function useGlobalStations(bounds: MapBounds | null) {
       return mapWaqiBoundsStationsToStations(dtos);
     },
     enabled: bounds !== null,
+    refetchInterval: 60_000,
+    gcTime: 5 * 60 * 1000,
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });

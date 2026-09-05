@@ -24,6 +24,9 @@ const WaqiIaqiValueSchema = z.object({ v: z.number() });
 const WaqiFeedDataSchema = z.object({
   aqi: z.union([z.number(), z.string()]),
   idx: z.number(),
+  attributions: z
+    .array(z.object({ name: z.string(), url: z.string() }))
+    .optional(),
   city: z
     .object({
       name: z.string().optional(),
@@ -33,6 +36,7 @@ const WaqiFeedDataSchema = z.object({
   time: z
     .object({
       s: z.string().optional(),
+      iso: z.string().optional(),
       tz: z.string().optional(),
       v: z.number().optional(),
     })

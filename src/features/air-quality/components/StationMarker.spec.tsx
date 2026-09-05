@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { Station } from '@/features/air-quality/model/station.types';
-import { AQI_SCALE, UNKNOWN_AQI } from '@/features/air-quality/utils/airQualityScale';
+import { AQI_SCALE } from '@/features/air-quality/utils/airQualityScale';
 import { StationMarker } from './StationMarker';
 
 vi.mock('react-leaflet', () => ({
@@ -43,7 +43,12 @@ describe('StationMarker', () => {
     const onSelect = vi.fn();
 
     render(
-      <StationMarker station={station} aqiLevel={null} isSelected={false} onSelect={onSelect} />,
+      <StationMarker
+        station={station}
+        aqiLevel={0}
+        isSelected={false}
+        onSelect={onSelect}
+      />,
     );
 
     fireEvent.click(screen.getByTestId('marker'));
@@ -53,17 +58,30 @@ describe('StationMarker', () => {
 
   it('applies correct fill colour for AQI level 0', () => {
     render(
-      <StationMarker station={station} aqiLevel={0} isSelected={false} onSelect={() => {}} />,
+      <StationMarker
+        station={station}
+        aqiLevel={0}
+        isSelected={false}
+        onSelect={() => {}}
+      />,
     );
 
-    expect(screen.getByTestId('marker')).toHaveAttribute('data-fill', AQI_SCALE[0].colour);
+    expect(screen.getByTestId('marker')).toHaveAttribute(
+      'data-fill',
+      AQI_SCALE[0].colour,
+    );
   });
 
-  it('applies grey colour for null AQI', () => {
+  it('does not render stations without an index', () => {
     render(
-      <StationMarker station={station} aqiLevel={null} isSelected={false} onSelect={() => {}} />,
+      <StationMarker
+        station={station}
+        aqiLevel={null}
+        isSelected={false}
+        onSelect={() => {}}
+      />,
     );
 
-    expect(screen.getByTestId('marker')).toHaveAttribute('data-fill', UNKNOWN_AQI.colour);
+    expect(screen.queryByTestId('marker')).not.toBeInTheDocument();
   });
 });

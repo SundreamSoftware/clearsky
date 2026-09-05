@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { giosTimestamp } from '../utils/dataValidity';
 import {
   Area,
   AreaChart,
@@ -19,6 +21,7 @@ interface PollutantChartProps {
   parameterCode: string;
   parameterName: string;
   unit: string;
+  range?: '24h' | '7d';
 }
 
 interface ChartDataPoint {
@@ -40,9 +43,19 @@ function formatChartDateTime(value: string): string {
 
 function toChartData(measurements: Measurement[]): ChartDataPoint[] {
   return [...measurements]
-    .filter((measurement): measurement is Measurement & { value: number } => measurement.value !== null)
-    .sort((a, b) => new Date(normalizeDate(a.date)).getTime() - new Date(normalizeDate(b.date)).getTime())
-    .map((measurement) => ({ date: measurement.date, value: measurement.value }));
+    .filter(
+      (measurement): measurement is Measurement & { value: number } =>
+        measurement.value !== null,
+    )
+    .sort(
+      (a, b) =>
+        new Date(normalizeDate(a.date)).getTime() -
+        new Date(normalizeDate(b.date)).getTime(),
+    )
+    .map((measurement) => ({
+      date: measurement.date,
+      value: measurement.value,
+    }));
 }
 
 export function PollutantChart({
@@ -50,21 +63,45 @@ export function PollutantChart({
   parameterCode,
   parameterName,
   unit,
+  range,
 }: PollutantChartProps) {
-  const { data: measurements = [], isLoading, error, refetch } = useSensorMeasurements(sensorId);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const {
+    data: measurements = [],
+    isLoading,
+    error,
+    refetch,
+  } = useSensorMeasurements(sensorId);
 
   if (sensorId === null) {
     return null;
   }
 
-  const chartData = toChartData(measurements);
+  const cutoff = now - (range === '7d' ? 7 : 1) * 24 * 60 * 60 * 1000;
+  const chartData = toChartData(
+    range
+      ? measurements.filter(
+          (measurement) =>
+            Date.parse(giosTimestamp(measurement.date) ?? '') >= cutoff,
+        )
+      : measurements,
+  );
 
   if (isLoading) {
     return <LoadingState message="Ładowanie danych..." />;
   }
 
   if (error) {
-    return <ErrorState message="Błąd ładowania danych czujnika." onRetry={() => void refetch()} />;
+    return (
+      <ErrorState
+        message="Błąd ładowania danych czujnika."
+        onRetry={() => void refetch()}
+      />
+    );
   }
 
   if (chartData.length === 0) {
@@ -74,7 +111,10 @@ export function PollutantChart({
   return (
     <div className="h-56" aria-label={`Wykres pomiarów ${parameterCode}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <AreaChart
+          data={chartData}
+          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
           <XAxis
             dataKey="date"
@@ -84,8 +124,13 @@ export function PollutantChart({
           />
           <YAxis tick={{ fontSize: 11 }} width={40} />
           <Tooltip
-            formatter={(value: unknown) => [`${value as number} ${unit}`, parameterName]}
-            labelFormatter={(label: unknown) => formatChartDateTime(String(label))}
+            formatter={(value: unknown) => [
+              `${value as number} ${unit}`,
+              parameterName,
+            ]}
+            labelFormatter={(label: unknown) =>
+              formatChartDateTime(String(label))
+            }
           />
           <Area
             type="monotone"
