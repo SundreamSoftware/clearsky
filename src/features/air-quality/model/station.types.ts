@@ -16,5 +16,6 @@ export interface Station {
   aqiLevel?: AqiLevel | null;
   /** Raw numeric AQI value for WAQI stations (e.g. 45). Undefined for GIOŚ. */
   rawAqi?: number | null;
+  observedAt?: string | null;
   sensorIds?: { pm25?: number };
 }

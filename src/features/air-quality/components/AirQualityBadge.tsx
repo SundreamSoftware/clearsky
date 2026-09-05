@@ -1,8 +1,13 @@
-import { getAqiBadgeTextColour, getAqiInfo } from '@/features/air-quality/utils/airQualityScale';
+import {
+  US_AQI_SCALE,
+  getAqiBadgeTextColour,
+  getAqiInfo,
+} from '@/features/air-quality/utils/airQualityScale';
 
 interface AirQualityBadgeProps {
   aqiLevel: number | null;
   aqiName: string | null;
+  source?: 'waqi' | 'gios';
   rawValue?: number | null;
   size?: 'sm' | 'md' | 'lg';
 }
@@ -17,9 +22,13 @@ export function AirQualityBadge({
   aqiLevel,
   aqiName,
   rawValue,
+  source = 'gios',
   size = 'md',
 }: AirQualityBadgeProps) {
-  const { colour, name } = getAqiInfo(aqiLevel);
+  const { colour, name } =
+    source === 'waqi' && aqiLevel !== null
+      ? US_AQI_SCALE[aqiLevel as keyof typeof US_AQI_SCALE]
+      : getAqiInfo(aqiLevel);
   const label = aqiLevel === null ? name : (aqiName ?? name);
   const textColour = getAqiBadgeTextColour(aqiLevel);
 
@@ -31,10 +40,22 @@ export function AirQualityBadge({
         className={`inline-flex flex-col items-center rounded-xl font-semibold ${sizeClasses[size]}`}
         style={{ backgroundColor: colour, color: textColour }}
       >
-        <span className={size === 'lg' ? 'text-2xl font-bold leading-none' : 'font-bold leading-none'}>
+        <span
+          className={
+            size === 'lg'
+              ? 'text-2xl font-bold leading-none'
+              : 'font-bold leading-none'
+          }
+        >
           {rawValue}
         </span>
-        <span className={size === 'lg' ? 'mt-0.5 text-xs font-medium opacity-90' : 'text-xs font-medium opacity-90'}>
+        <span
+          className={
+            size === 'lg'
+              ? 'mt-0.5 text-xs font-medium opacity-90'
+              : 'text-xs font-medium opacity-90'
+          }
+        >
           {label}
         </span>
       </span>

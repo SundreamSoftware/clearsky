@@ -5,12 +5,14 @@ import {
 } from './waqiStationMapper';
 import type { WaqiBoundsStationDto } from '../api/waqi.dto';
 
-const makeDto = (overrides: Partial<WaqiBoundsStationDto> = {}): WaqiBoundsStationDto => ({
+const makeDto = (
+  overrides: Partial<WaqiBoundsStationDto> = {},
+): WaqiBoundsStationDto => ({
   uid: 1234,
   aqi: 42,
   lat: 52.23,
   lon: 21.01,
-  station: { name: 'Warsaw Test Station' },
+  station: { name: 'Warsaw Test Station', time: new Date().toISOString() },
   ...overrides,
 });
 
@@ -27,7 +29,9 @@ describe('mapWaqiBoundsStationToStation', () => {
   });
 
   it('maps lat/lon correctly', () => {
-    const station = mapWaqiBoundsStationToStation(makeDto({ lat: 50.1, lon: 18.5 }));
+    const station = mapWaqiBoundsStationToStation(
+      makeDto({ lat: 50.1, lon: 18.5 }),
+    );
     expect(station.latitude).toBe(50.1);
     expect(station.longitude).toBe(18.5);
   });
@@ -81,4 +85,18 @@ describe('mapWaqiBoundsStationsToStations', () => {
   it('returns empty array for empty input', () => {
     expect(mapWaqiBoundsStationsToStations([])).toEqual([]);
   });
+});
+
+it('excludes invalid, missing, stale and undated readings, but retains zero AQI in Poland', () => {
+  const stations = mapWaqiBoundsStationsToStations([
+    makeDto({ uid: 1, aqi: 0 }),
+    makeDto({ uid: 2, aqi: '-' }),
+    makeDto({ uid: 3, aqi: '12invalid' }),
+    makeDto({ uid: 4, station: { name: 'Old', time: '2020-01-01T00:00:00Z' } }),
+    makeDto({ uid: 5, station: { name: 'Undated' } }),
+    makeDto({ uid: 6, lat: 100 }),
+    makeDto({ uid: 1, aqi: 0 }),
+  ]);
+  expect(stations.map((station) => station.id)).toEqual(['waqi-1']);
+  expect(stations[0].rawAqi).toBe(0);
 });

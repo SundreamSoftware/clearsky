@@ -14,7 +14,11 @@ vi.mock('@/features/air-quality/hooks/useSensorMeasurements', () => ({
   useSensorMeasurements: vi.fn(),
 }));
 vi.mock('@/features/air-quality/hooks/useWaqiStationDetail', () => ({
-  useWaqiStationDetail: vi.fn(() => ({ data: undefined, isLoading: false, error: null })),
+  useWaqiStationDetail: vi.fn(() => ({
+    data: undefined,
+    isLoading: false,
+    error: null,
+  })),
 }));
 vi.mock('@/features/weather/hooks/useWeather', () => ({
   useWeather: vi.fn(() => ({ data: undefined, isLoading: false, error: null })),
@@ -106,7 +110,13 @@ describe('StationDetailsPanel', () => {
 
   it('renders AQI badge when AQI data is available', () => {
     mockUseAirQualityIndex.mockReturnValue({
-      data: { indexLevel: 1, indexName: 'Dobry', stationId: 1, calculatedAt: null, sourceDataDate: null },
+      data: {
+        indexLevel: 1,
+        indexName: 'Dobry',
+        stationId: 1,
+        calculatedAt: null,
+        sourceDataDate: new Date().toISOString(),
+      },
       isLoading: false,
       error: null,
     } as unknown as ReturnType<typeof useAirQualityIndex>);
@@ -219,4 +229,36 @@ describe('StationDetailsPanel', () => {
 
     expect(screen.getByText(/Kliknij kartę/i)).toBeInTheDocument();
   });
+});
+
+it('uses live WAQI AQI for both category and value and labels pollutants as indices', async () => {
+  const { useWaqiStationDetail } =
+    await import('@/features/air-quality/hooks/useWaqiStationDetail');
+  vi.mocked(useWaqiStationDetail).mockReturnValue({
+    data: {
+      idx: 42,
+      aqi: 170,
+      time: { iso: new Date().toISOString() },
+      iaqi: { pm25: { v: 170 } },
+    },
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useWaqiStationDetail>);
+  render(
+    <StationDetailsPanel
+      station={{
+        ...mockStation,
+        id: 'waqi-42',
+        source: 'waqi',
+        aqiLevel: 0,
+        rawAqi: 10,
+      }}
+      selectedSensorId={null}
+      onSensorSelect={() => {}}
+      onClose={() => {}}
+    />,
+  );
+  expect(screen.getByText('Niezdrowy (151–200)')).toBeInTheDocument();
+  expect(screen.getByText('170.00 AQI')).toBeInTheDocument();
+  expect(screen.queryByText('170.00 µg/m³')).not.toBeInTheDocument();
 });
